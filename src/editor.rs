@@ -1,19 +1,29 @@
-use crossterm::event::{read, Event, Event::Key, KeyCode::Char, KeyEvent, KeyModifiers};
+use crossterm::event::{
+    read,
+    Event::{self, Key},
+    KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+};
+use std::cmp::min;
 
 mod terminal;
 use terminal::Terminal;
 
+#[derive(Copy, Clone, Default)]
+struct Location {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Default)]
 pub struct Editor {
     should_quit: bool,
+    location: Location,
 }
 
 impl Editor {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    pub const fn default() -> Self {
-        Editor { should_quit: false }
-    }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
         let result = self.repl();
@@ -48,21 +58,53 @@ impl Editor {
                 break;
             }
             let event = read()?;
-            self.evaluate_evnet(&event);
+            self.evaluate_evnet(&event)?;
         }
         Ok(())
     }
-    fn evaluate_evnet(&mut self, event: &Event) {
+    fn move_point(&mut self, key_code: KeyCode) -> Result<(), std::io::Error> {
+        let Location { mut x, mut y } = self.location;
+        let (ncol, nrow) = Terminal::size()?;
+        match key_code {
+            KeyCode::Char('h') => {
+                x = x.saturating_sub(1);
+            }
+            KeyCode::Char('j') => {
+                y = min(nrow as usize - 1, y.saturating_add(1));
+            }
+            KeyCode::Char('k') => {
+                y = y.saturating_sub(1);
+            }
+            KeyCode::Char('l') => {
+                x = min(ncol as usize - 1, x.saturating_add(1));
+            }
+            _ => (),
+        }
+        self.location = Location { x, y };
+        Ok(())
+    }
+    fn evaluate_evnet(&mut self, event: &Event) -> Result<(), std::io::Error> {
         if let Key(KeyEvent {
-            code: Char(c),
+            code,
             modifiers,
+            kind: KeyEventKind::Press,
             ..
         }) = event
         {
-            if *c == 'q' && *modifiers == KeyModifiers::CONTROL {
-                self.should_quit = true;
+            match code {
+                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
+                    self.should_quit = true;
+                }
+                KeyCode::Char('h')
+                | KeyCode::Char('j')
+                | KeyCode::Char('k')
+                | KeyCode::Char('l') => {
+                    self.move_point(*code)?;
+                }
+                _ => (),
             }
         }
+        Ok(())
     }
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
         if self.should_quit {
@@ -70,7 +112,8 @@ impl Editor {
             print!("Goodbye!\r\n");
         } else {
             Self::draw_welcom_message()?;
-            Terminal::move_cursor_to(0, 0)?;
+            let Location { x, y } = self.location;
+            Terminal::move_cursor_to(x as u16, y as u16)?;
         }
         Ok(())
     }
