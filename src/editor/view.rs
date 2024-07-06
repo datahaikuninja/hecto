@@ -12,7 +12,12 @@ impl View {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+    pub fn load(&mut self, contents: &str) {
+        self.buffer.load(contents);
+    }
     pub fn render(&self) -> Result<(), std::io::Error> {
+        // TODO: separate implementation of render()
+        // according to whether buffer is empty or not.
         let Size { height, .. } = Terminal::size()?;
         for i in 0..height {
             let pos = Position { row: i, col: 0 };
@@ -24,7 +29,9 @@ impl View {
                 Terminal::print("~")?;
             }
         }
-        Self::draw_welcom_message()?;
+        if self.buffer.is_empty() {
+            Self::draw_welcom_message()?;
+        }
         Ok(())
     }
     fn draw_welcom_message() -> Result<(), std::io::Error> {

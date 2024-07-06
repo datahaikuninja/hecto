@@ -25,6 +25,17 @@ pub struct Editor {
 }
 
 impl Editor {
+    pub fn new(filename: &str) -> Self {
+        // TODO: consider execute read_to_string inside Buffer::load().
+        let contents = std::fs::read_to_string(filename).expect("cannot open file");
+        let mut view = View::default();
+        view.load(&contents);
+        Self {
+            should_quit: false,
+            location: Location::default(),
+            view,
+        }
+    }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
         let result = self.repl();
