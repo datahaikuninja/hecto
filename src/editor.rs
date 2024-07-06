@@ -21,6 +21,7 @@ struct Location {
 pub struct Editor {
     should_quit: bool,
     location: Location,
+    view: View,
 }
 
 impl Editor {
@@ -90,7 +91,7 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
-            View::render()?;
+            self.view.render()?;
             let Location { x, y } = self.location;
             let pos = Position { row: y, col: x };
             Terminal::move_cursor_to(pos)?;

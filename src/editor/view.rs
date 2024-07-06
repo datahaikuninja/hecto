@@ -1,17 +1,28 @@
 use super::terminal::{Position, Size, Terminal};
 
-pub struct View;
+mod buffer;
+use buffer::Buffer;
+
+#[derive(Default)]
+pub struct View {
+    buffer: Buffer,
+}
 
 impl View {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    pub fn render() -> Result<(), std::io::Error> {
+    pub fn render(&self) -> Result<(), std::io::Error> {
         let Size { height, .. } = Terminal::size()?;
         for i in 0..height {
             let pos = Position { row: i, col: 0 };
-            Terminal::move_cursor_to(pos)?;
-            Terminal::print("~")?;
+            if let Some(line) = self.buffer.lines.get(i) {
+                Terminal::move_cursor_to(pos)?;
+                Terminal::print(line)?;
+            } else {
+                Terminal::move_cursor_to(pos)?;
+                Terminal::print("~")?;
+            }
         }
         Self::draw_welcom_message()?;
         Ok(())
