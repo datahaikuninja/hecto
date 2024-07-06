@@ -6,7 +6,7 @@ use crossterm::event::{
 use std::cmp::min;
 
 mod terminal;
-use terminal::Terminal;
+use terminal::{Position, Size, Terminal};
 
 mod view;
 use view::View;
@@ -43,19 +43,19 @@ impl Editor {
     }
     fn move_point(&mut self, key_code: KeyCode) -> Result<(), std::io::Error> {
         let Location { mut x, mut y } = self.location;
-        let (ncol, nrow) = Terminal::size()?;
+        let Size { height, width } = Terminal::size()?;
         match key_code {
             KeyCode::Char('h') => {
                 x = x.saturating_sub(1);
             }
             KeyCode::Char('j') => {
-                y = min(nrow as usize - 1, y.saturating_add(1));
+                y = min(height - 1, y.saturating_add(1));
             }
             KeyCode::Char('k') => {
                 y = y.saturating_sub(1);
             }
             KeyCode::Char('l') => {
-                x = min(ncol as usize - 1, x.saturating_add(1));
+                x = min(width - 1, x.saturating_add(1));
             }
             _ => (),
         }
@@ -92,7 +92,8 @@ impl Editor {
         } else {
             View::render()?;
             let Location { x, y } = self.location;
-            Terminal::move_cursor_to(x as u16, y as u16)?;
+            let pos = Position { row: y, col: x };
+            Terminal::move_cursor_to(pos)?;
         }
         Ok(())
     }
