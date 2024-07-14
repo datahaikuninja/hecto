@@ -3,9 +3,9 @@ use super::terminal::{Position, Size, Terminal};
 mod buffer;
 use buffer::Buffer;
 
-#[derive(Default)]
 pub struct View {
     buffer: Buffer,
+    needs_redraw: bool,
 }
 
 impl View {
@@ -14,16 +14,25 @@ impl View {
 
     pub fn load(&mut self, contents: &str) {
         self.buffer.load(contents);
+        self.needs_redraw = true;
     }
-    pub fn render(&self) -> Result<(), std::io::Error> {
+    pub fn render(&mut self) -> Result<(), std::io::Error> {
         // TODO: separate implementation of render()
         // according to whether buffer is empty or not.
-        let Size { height, .. } = Terminal::size()?;
+        if !self.needs_redraw {
+            return Ok(());
+        }
+        let Size { height, width } = Terminal::size()?;
         for i in 0..height {
             let pos = Position { row: i, col: 0 };
             if let Some(line) = self.buffer.lines.get(i) {
+                let truncated_line = if line.len() >= width {
+                    &line[0..width]
+                } else {
+                    line
+                };
                 Terminal::move_cursor_to(pos)?;
-                Terminal::print(line)?;
+                Terminal::print(truncated_line)?;
             } else {
                 Terminal::move_cursor_to(pos)?;
                 Terminal::print("~")?;
@@ -32,6 +41,7 @@ impl View {
         if self.buffer.is_empty() {
             Self::draw_welcom_message()?;
         }
+        self.needs_redraw = false;
         Ok(())
     }
     fn draw_welcom_message() -> Result<(), std::io::Error> {
@@ -46,5 +56,14 @@ impl View {
         Terminal::move_cursor_to(pos)?;
         Terminal::print(&message)?;
         Ok(())
+    }
+}
+
+impl Default for View {
+    fn default() -> Self {
+        Self {
+            buffer: Buffer::default(),
+            needs_redraw: true,
+        }
     }
 }

@@ -97,7 +97,7 @@ impl Editor {
         }
         Ok(())
     }
-    fn refresh_screen(&self) -> Result<(), std::io::Error> {
+    fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
         if self.should_quit {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
