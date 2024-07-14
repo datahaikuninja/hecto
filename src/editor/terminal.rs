@@ -35,6 +35,10 @@ impl Terminal {
         execute!(std::io::stdout(), Clear(ClearType::All))?;
         Ok(())
     }
+    pub fn clear_line() -> Result<(), std::io::Error> {
+        execute!(std::io::stdout(), Clear(ClearType::CurrentLine))?;
+        Ok(())
+    }
     pub fn enter_alternate_screen() -> Result<(), std::io::Error> {
         execute!(std::io::stdout(), EnterAlternateScreen)?;
         Ok(())

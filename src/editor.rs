@@ -3,24 +3,16 @@ use crossterm::event::{
     Event::{self, Key},
     KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
 };
-use std::cmp::min;
 
 mod terminal;
-use terminal::{Position, Size, Terminal};
+use terminal::Terminal;
 
 mod view;
 use view::View;
 
-#[derive(Copy, Clone, Default)]
-struct Location {
-    x: usize,
-    y: usize,
-}
-
 #[derive(Default)]
 pub struct Editor {
     should_quit: bool,
-    location: Location,
     view: View,
 }
 
@@ -32,7 +24,6 @@ impl Editor {
         view.load(&contents);
         Self {
             should_quit: false,
-            location: Location::default(),
             view,
         }
     }
@@ -53,27 +44,6 @@ impl Editor {
         }
         Ok(())
     }
-    fn move_point(&mut self, key_code: KeyCode) -> Result<(), std::io::Error> {
-        let Location { mut x, mut y } = self.location;
-        let Size { height, width } = Terminal::size()?;
-        match key_code {
-            KeyCode::Char('h') => {
-                x = x.saturating_sub(1);
-            }
-            KeyCode::Char('j') => {
-                y = min(height - 1, y.saturating_add(1));
-            }
-            KeyCode::Char('k') => {
-                y = y.saturating_sub(1);
-            }
-            KeyCode::Char('l') => {
-                x = min(width - 1, x.saturating_add(1));
-            }
-            _ => (),
-        }
-        self.location = Location { x, y };
-        Ok(())
-    }
     fn evaluate_evnet(&mut self, event: &Event) -> Result<(), std::io::Error> {
         if let Key(KeyEvent {
             code,
@@ -90,7 +60,7 @@ impl Editor {
                 | KeyCode::Char('j')
                 | KeyCode::Char('k')
                 | KeyCode::Char('l') => {
-                    self.move_point(*code)?;
+                    self.view.handle_move(*code)?;
                 }
                 _ => (),
             }
@@ -103,8 +73,7 @@ impl Editor {
             print!("Goodbye!\r\n");
         } else {
             self.view.render()?;
-            let Location { x, y } = self.location;
-            let pos = Position { row: y, col: x };
+            let pos = self.view.get_position();
             Terminal::move_cursor_to(pos)?;
         }
         Ok(())
