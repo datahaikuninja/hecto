@@ -1,7 +1,9 @@
 use crossterm::cursor::MoveTo;
 use crossterm::execute;
 use crossterm::style::Print;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
+};
 
 pub struct Terminal {}
 
@@ -19,16 +21,26 @@ pub struct Position {
 
 impl Terminal {
     pub fn initialize() -> Result<(), std::io::Error> {
+        Self::enter_alternate_screen()?;
         enable_raw_mode()?;
         Self::clear_screen()?;
         Ok(())
     }
     pub fn terminate() -> Result<(), std::io::Error> {
+        Self::leave_alternate_screen()?;
         disable_raw_mode()?;
         Ok(())
     }
     pub fn clear_screen() -> Result<(), std::io::Error> {
         execute!(std::io::stdout(), Clear(ClearType::All))?;
+        Ok(())
+    }
+    pub fn enter_alternate_screen() -> Result<(), std::io::Error> {
+        execute!(std::io::stdout(), EnterAlternateScreen)?;
+        Ok(())
+    }
+    pub fn leave_alternate_screen() -> Result<(), std::io::Error> {
+        execute!(std::io::stdout(), LeaveAlternateScreen)?;
         Ok(())
     }
     pub fn move_cursor_to(position: Position) -> Result<(), std::io::Error> {
