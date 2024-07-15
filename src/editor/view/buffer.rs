@@ -8,7 +8,7 @@ impl Buffer {
         self.lines.is_empty()
     }
     pub fn load(&mut self, contents: &str) {
-        let lines: Vec<_> = contents.split("\n").map(|s| String::from(s)).collect();
+        let lines: Vec<_> = contents.lines().map(|s| String::from(s)).collect();
         self.lines = lines;
     }
 }
