@@ -26,9 +26,6 @@ impl View {
     pub fn render(&mut self) -> Result<(), std::io::Error> {
         // TODO: separate implementation of render()
         // according to whether buffer is empty or not.
-
-        // FIXME: horizontally scrolling do not work!
-        // see: https://github.com/datahaikuninja/hecto/issues/1
         if !self.needs_redraw {
             return Ok(());
         }
@@ -37,13 +34,8 @@ impl View {
         for i in 0..height {
             if let Some(line) = self.buffer.lines.get(i + top) {
                 let left = self.scroll_offset.x;
-                let right = left + width;
-                let truncated_line = if line.len() >= width {
-                    &line[left..right]
-                } else {
-                    line
-                };
-                self.render_line(i, truncated_line)?;
+                let right = std::cmp::min(left + width, line.len());
+                self.render_line(i, line.get(left..right).unwrap_or_default())?;
             } else {
                 self.render_line(i, "~")?;
             }
