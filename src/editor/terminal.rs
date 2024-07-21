@@ -58,6 +58,25 @@ impl Terminal {
         execute!(std::io::stdout(), Print(s))?;
         Ok(())
     }
+    pub fn print_log(s: &str) -> Result<(), std::io::Error> {
+        // Leave alternate screen temporarily, and send log
+        // message to normal screen.
+        execute!(
+            std::io::stdout(),
+            // Temporarily leave alternate screen.
+            Print("\x1b[?1049l"), // Same as `LeaveAlternateScreen`
+            // Write log message.
+            Print(s),
+            Print("\r\n"),
+            // Re-enter to alternate screen without clearing screen buffer.
+            // `EnterAlternateScreen` (CSI ?1049h) does not work because it will
+            // clear the screen buffer, when entering to alternate screen.
+            // see xterm manual: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Functions-using-CSI-_-ordered-by-the-final-character_s_
+            Print("\x1b[?1048h"), // Save cursor (DECSC)
+            Print("\x1b[?1047h"), // Enter alternate screen (without clearing buffer)
+        )?;
+        Ok(())
+    }
     pub fn size() -> Result<Size, std::io::Error> {
         let (ncol, nrow) = crossterm::terminal::size()?;
         Ok(Size {
