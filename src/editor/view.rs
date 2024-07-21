@@ -66,9 +66,9 @@ impl View {
 
         // Ensure self.location points to valid text position.
         let n_line = self.buffer.lines.len();
-        y = std::cmp::min(y, n_line - 1);
-        let line_length = self.buffer.lines.get(y).unwrap().len();
-        x = std::cmp::min(x, line_length - 1);
+        y = std::cmp::min(y, n_line.saturating_sub(1));
+        let line_length = self.buffer.lines.get(y).map_or("", |s| s).len();
+        x = std::cmp::min(x, line_length.saturating_sub(1));
 
         self.location = Location { x, y };
         self.update_scroll_offset()?;
