@@ -1,7 +1,8 @@
 use super::terminal::{Position, Size, Terminal};
 
 use crossterm::event::KeyCode;
-use unicode_segmentation::UnicodeSegmentation;
+
+mod line;
 
 mod buffer;
 use buffer::Buffer;
@@ -35,12 +36,8 @@ impl View {
         for i in 0..height {
             if let Some(line) = self.buffer.lines.get(i + top) {
                 let left = self.scroll_offset.x;
-                let right = std::cmp::min(left + width, line.len());
-                let display_line = line
-                    .graphemes(true)
-                    .skip(left)
-                    .take(right.saturating_sub(left))
-                    .collect::<String>();
+                let right = left + width;
+                let display_line = line.get_range(left, right);
                 self.render_line(i, &display_line)?;
             } else {
                 self.render_line(i, "~")?;
@@ -73,11 +70,7 @@ impl View {
         // Ensure self.location points to valid text position.
         let n_line = self.buffer.lines.len();
         y = std::cmp::min(y, n_line.saturating_sub(1));
-        let line_length = self
-            .buffer
-            .lines
-            .get(y)
-            .map_or(0, |s| s.graphemes(true).count());
+        let line_length = self.buffer.lines.get(y).map_or(0, |s| s.len());
         x = std::cmp::min(x, line_length.saturating_sub(1));
 
         self.location = Location { x, y };

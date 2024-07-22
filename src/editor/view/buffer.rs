@@ -1,6 +1,8 @@
+use super::line::Line;
+
 #[derive(Default)]
 pub struct Buffer {
-    pub lines: Vec<String>,
+    pub lines: Vec<Line>,
 }
 
 impl Buffer {
@@ -8,7 +10,7 @@ impl Buffer {
         self.lines.is_empty()
     }
     pub fn load(&mut self, contents: &str) {
-        let lines: Vec<_> = contents.lines().map(String::from).collect();
+        let lines: Vec<_> = contents.lines().map(Line::from_str).collect();
         self.lines = lines;
     }
 }
