@@ -14,6 +14,12 @@ impl GraphemeWidth {
             _ => panic!("Invalid grapheme width"),
         }
     }
+    pub fn to_usize(&self) -> usize {
+        match self {
+            Self::Half => 1,
+            Self::Full => 2,
+        }
+    }
 }
 
 struct Grapheme {
@@ -46,6 +52,13 @@ impl Line {
             .map(|g| g.string.clone())
             .collect::<String>();
         display_line
+    }
+    pub fn calc_width_until_grapheme_index(&self, graphme_index: usize) -> usize {
+        self.graphemes
+            .iter()
+            .take(graphme_index)
+            .map(|g| g.width.to_usize())
+            .sum()
     }
     pub fn len(&self) -> usize {
         self.graphemes.len()

@@ -78,9 +78,15 @@ impl View {
         Ok(())
     }
     pub fn get_position(&self) -> Position {
+        let Location { x, y: ypos } = self.location;
+        let xpos = self
+            .buffer
+            .lines
+            .get(ypos)
+            .map_or(0, |line| line.calc_width_until_grapheme_index(x));
         Position {
-            row: self.location.y - self.scroll_offset.y,
-            col: self.location.x - self.scroll_offset.x,
+            row: ypos - self.scroll_offset.y,
+            col: xpos - self.scroll_offset.x,
         }
     }
     fn render_line(&self, row: usize, text: &str) -> Result<(), std::io::Error> {
