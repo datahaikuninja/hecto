@@ -42,16 +42,29 @@ impl Line {
             .collect::<Vec<_>>();
         Self { graphemes }
     }
-    pub fn get_range(&self, left: usize, right: usize) -> String {
-        let end = std::cmp::min(right, self.len());
-        let display_line = self
-            .graphemes
-            .iter()
-            .skip(left)
-            .take(end.saturating_sub(left))
-            .map(|g| g.string.clone())
-            .collect::<String>();
-        display_line
+    pub fn get_visible_graphemes(&self, left: usize, right: usize) -> String {
+        let mut result = String::new();
+        let mut current_pos = 0;
+        for grapheme in &self.graphemes {
+            let next_pos = current_pos + grapheme.width.to_usize();
+            if current_pos >= right {
+                break;
+            }
+            if next_pos > left {
+                // Replace cut-off text with '>' or '<'.
+                if next_pos > right {
+                    result.push('>');
+                } else if current_pos < left {
+                    result.push('<');
+                }
+                // add fully visible grapheme
+                else {
+                    result.push_str(&grapheme.string);
+                }
+            }
+            current_pos = next_pos;
+        }
+        result
     }
     pub fn calc_width_until_grapheme_index(&self, graphme_index: usize) -> usize {
         self.graphemes

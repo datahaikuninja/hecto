@@ -73,7 +73,7 @@ impl Editor {
             print!("Goodbye!\r\n");
         } else {
             self.view.render()?;
-            let pos = self.view.get_position();
+            let pos = self.view.get_relative_position();
             Terminal::move_cursor_to(pos)?;
         }
         Ok(())

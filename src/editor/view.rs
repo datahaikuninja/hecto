@@ -14,7 +14,7 @@ pub struct View {
     buffer: Buffer,
     needs_redraw: bool,
     location: Location,
-    scroll_offset: Location,
+    scroll_offset: Position,
 }
 
 impl View {
@@ -31,13 +31,13 @@ impl View {
         if !self.needs_redraw {
             return Ok(());
         }
-        let top = self.scroll_offset.y;
+        let top = self.scroll_offset.row;
         let Size { height, width } = Terminal::size()?;
         for i in 0..height {
             if let Some(line) = self.buffer.lines.get(i + top) {
-                let left = self.scroll_offset.x;
+                let left = self.scroll_offset.col;
                 let right = left + width;
-                let display_line = line.get_range(left, right);
+                let display_line = line.get_visible_graphemes(left, right);
                 self.render_line(i, &display_line)?;
             } else {
                 self.render_line(i, "~")?;
@@ -77,7 +77,14 @@ impl View {
         self.update_scroll_offset()?;
         Ok(())
     }
-    pub fn get_position(&self) -> Position {
+    pub fn get_relative_position(&self) -> Position {
+        let Position { row, col } = self.get_absolute_position();
+        Position {
+            col: col - self.scroll_offset.col,
+            row: row - self.scroll_offset.row,
+        }
+    }
+    pub fn get_absolute_position(&self) -> Position {
         let Location { x, y: ypos } = self.location;
         let xpos = self
             .buffer
@@ -85,8 +92,8 @@ impl View {
             .get(ypos)
             .map_or(0, |line| line.calc_width_until_grapheme_index(x));
         Position {
-            row: ypos - self.scroll_offset.y,
-            col: xpos - self.scroll_offset.x,
+            row: ypos,
+            col: xpos,
         }
     }
     fn render_line(&self, row: usize, text: &str) -> Result<(), std::io::Error> {
@@ -97,28 +104,28 @@ impl View {
         Ok(())
     }
     fn update_scroll_offset(&mut self) -> Result<(), std::io::Error> {
-        let Location { x, y } = self.location;
         let Size { width, height } = Terminal::size()?;
         let mut offset_changed = false;
+        let next_pos = self.get_absolute_position();
 
         // Scroll vertically
-        if y < self.scroll_offset.y {
-            self.scroll_offset.y = y;
+        if next_pos.row < self.scroll_offset.row {
+            self.scroll_offset.row = next_pos.row;
             offset_changed = true;
-        } else if y >= self.scroll_offset.y.saturating_add(height) {
-            self.scroll_offset.y = y.saturating_sub(height).saturating_add(1);
+        } else if next_pos.row >= self.scroll_offset.row.saturating_add(height) {
+            self.scroll_offset.row = next_pos.row.saturating_sub(height).saturating_add(1);
             offset_changed = true;
         }
 
         //Scroll horizontally
-        if x < self.scroll_offset.x {
-            self.scroll_offset.x = x;
+        if next_pos.col < self.scroll_offset.col {
+            self.scroll_offset.col = next_pos.col;
             offset_changed = true;
-        } else if x >= self.scroll_offset.x.saturating_add(width) {
-            self.scroll_offset.x = x.saturating_sub(width).saturating_add(1);
+        } else if next_pos.col >= self.scroll_offset.col.saturating_add(width) {
+            self.scroll_offset.col = next_pos.col.saturating_sub(width).saturating_add(1);
             offset_changed = true;
         }
-        self.needs_redraw = offset_changed;
+        self.needs_redraw = self.needs_redraw || offset_changed;
         Ok(())
     }
     fn draw_welcom_message() -> Result<(), std::io::Error> {
@@ -142,7 +149,7 @@ impl Default for View {
             buffer: Buffer::default(),
             needs_redraw: true,
             location: Location::default(),
-            scroll_offset: Location::default(),
+            scroll_offset: Position::default(),
         }
     }
 }
