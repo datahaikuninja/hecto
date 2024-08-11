@@ -85,16 +85,20 @@ impl View {
         }
     }
     pub fn get_absolute_position(&self) -> Position {
-        let Location { x, y: ypos } = self.location;
-        let xpos = self
-            .buffer
-            .lines
-            .get(ypos)
-            .map_or(0, |line| line.calc_width_until_grapheme_index(x));
-        Position {
-            row: ypos,
-            col: xpos,
-        }
+        self.get_absolute_range().0
+    }
+    pub fn get_absolute_range(&self) -> (Position, Position) {
+        let Location { x, y } = self.location;
+        let (left, right) = self.buffer.lines.get(y).map_or((0, 0), |line| {
+            (
+                line.calc_width_until_grapheme_index(x),
+                line.calc_width_until_grapheme_index(x + 1),
+            )
+        });
+        (
+            Position { row: y, col: left },
+            Position { row: y, col: right },
+        )
     }
     fn render_line(&self, row: usize, text: &str) -> Result<(), std::io::Error> {
         let pos = Position { row, col: 0 };
@@ -106,23 +110,23 @@ impl View {
     fn update_scroll_offset(&mut self) -> Result<(), std::io::Error> {
         let Size { width, height } = Terminal::size()?;
         let mut offset_changed = false;
-        let next_pos = self.get_absolute_position();
+        let (Position { row, col: left }, Position { col: right, .. }) = self.get_absolute_range();
 
         // Scroll vertically
-        if next_pos.row < self.scroll_offset.row {
-            self.scroll_offset.row = next_pos.row;
+        if row < self.scroll_offset.row {
+            self.scroll_offset.row = row;
             offset_changed = true;
-        } else if next_pos.row >= self.scroll_offset.row.saturating_add(height) {
-            self.scroll_offset.row = next_pos.row.saturating_sub(height).saturating_add(1);
+        } else if row >= self.scroll_offset.row + height {
+            self.scroll_offset.row = row - height + 1;
             offset_changed = true;
         }
 
         //Scroll horizontally
-        if next_pos.col < self.scroll_offset.col {
-            self.scroll_offset.col = next_pos.col;
+        if left < self.scroll_offset.col {
+            self.scroll_offset.col = left;
             offset_changed = true;
-        } else if next_pos.col >= self.scroll_offset.col.saturating_add(width) {
-            self.scroll_offset.col = next_pos.col.saturating_sub(width).saturating_add(1);
+        } else if right > self.scroll_offset.col + width {
+            self.scroll_offset.col = right - width;
             offset_changed = true;
         }
         self.needs_redraw = self.needs_redraw || offset_changed;
