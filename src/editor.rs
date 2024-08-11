@@ -1,8 +1,7 @@
-use crossterm::event::{
-    read,
-    Event::{self, Key},
-    KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-};
+use crossterm::event::{read, Event};
+
+mod editor_command;
+use editor_command::Command;
 
 mod terminal;
 use terminal::Terminal;
@@ -51,25 +50,15 @@ impl Editor {
         Ok(())
     }
     fn evaluate_evnet(&mut self, event: &Event) -> Result<(), std::io::Error> {
-        if let Key(KeyEvent {
-            code,
-            modifiers,
-            kind: KeyEventKind::Press,
-            ..
-        }) = event
-        {
-            match code {
-                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
-                    self.should_quit = true;
-                }
-                KeyCode::Char('h')
-                | KeyCode::Char('j')
-                | KeyCode::Char('k')
-                | KeyCode::Char('l') => {
-                    self.view.handle_move(*code)?;
-                }
-                _ => (),
+        let command = Command::from_key_event(event);
+        match command {
+            Command::Quit => {
+                self.should_quit = true;
             }
+            Command::CursorMove(direction) => {
+                self.view.handle_move(direction)?;
+            }
+            Command::Nop => (),
         }
         Ok(())
     }

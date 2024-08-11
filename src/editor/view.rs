@@ -1,6 +1,6 @@
 use super::terminal::{Position, Size, Terminal};
 
-use crossterm::event::KeyCode;
+use super::editor_command::Direction;
 
 mod line;
 use line::Grapheme;
@@ -60,22 +60,21 @@ impl View {
         self.needs_redraw = false;
         Ok(())
     }
-    pub fn handle_move(&mut self, key_code: KeyCode) -> Result<(), std::io::Error> {
+    pub fn handle_move(&mut self, direction: Direction) -> Result<(), std::io::Error> {
         let Location { mut x, mut y } = self.location;
-        match key_code {
-            KeyCode::Char('h') => {
+        match direction {
+            Direction::Left => {
                 x = x.saturating_sub(1);
             }
-            KeyCode::Char('j') => {
+            Direction::Down => {
                 y = y.saturating_add(1);
             }
-            KeyCode::Char('k') => {
+            Direction::Up => {
                 y = y.saturating_sub(1);
             }
-            KeyCode::Char('l') => {
+            Direction::Right => {
                 x = x.saturating_add(1);
             }
-            _ => (),
         }
 
         // Ensure self.location points to valid text position.
