@@ -1,7 +1,7 @@
 use crossterm::event::{read, Event};
 
 mod editor_command;
-use editor_command::Command;
+use editor_command::{EditorMode, InsertModeCommand, NormalModeCommand};
 
 mod terminal;
 use terminal::Terminal;
@@ -11,6 +11,7 @@ use view::View;
 
 pub struct Editor {
     should_quit: bool,
+    mode: EditorMode,
     view: View,
 }
 
@@ -24,6 +25,7 @@ impl Editor {
         let view = View::default();
         Self {
             should_quit: false,
+            mode: EditorMode::NormalMode,
             view,
         }
     }
@@ -50,15 +52,35 @@ impl Editor {
         Ok(())
     }
     fn evaluate_evnet(&mut self, event: &Event) -> Result<(), std::io::Error> {
-        let command = Command::from_key_event(event);
+        match self.mode {
+            EditorMode::NormalMode => self.evaluate_evnet_in_normal_mode(event)?,
+            EditorMode::InsertMode => self.evaluate_evnet_in_insert_mode(event)?,
+        }
+        Ok(())
+    }
+    fn evaluate_evnet_in_normal_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = NormalModeCommand::from_key_event(event);
         match command {
-            Command::Quit => {
+            NormalModeCommand::Quit => {
                 self.should_quit = true;
             }
-            Command::CursorMove(direction) => {
+            NormalModeCommand::CursorMove(direction) => {
                 self.view.handle_move(direction)?;
             }
-            Command::Nop => (),
+            NormalModeCommand::EnterInsertMode => {
+                self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn evaluate_evnet_in_insert_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = InsertModeCommand::from_key_event(event);
+        match command {
+            InsertModeCommand::LeaveInsertMode => {
+                self.mode = EditorMode::NormalMode;
+            }
+            InsertModeCommand::Nop => (),
         }
         Ok(())
     }

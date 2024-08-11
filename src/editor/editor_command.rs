@@ -1,6 +1,17 @@
 use crossterm::event::Event::{self, Key};
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+pub enum EditorMode {
+    NormalMode,
+    InsertMode,
+}
+
+impl Default for EditorMode {
+    fn default() -> Self {
+        Self::NormalMode
+    }
+}
+
 pub enum Direction {
     Left,
     Right,
@@ -8,13 +19,14 @@ pub enum Direction {
     Down,
 }
 
-pub enum Command {
+pub enum NormalModeCommand {
     CursorMove(Direction),
+    EnterInsertMode,
     Quit,
     Nop,
 }
 
-impl Command {
+impl NormalModeCommand {
     pub fn from_key_event(event: &Event) -> Self {
         if let Key(KeyEvent {
             code,
@@ -29,6 +41,31 @@ impl Command {
                 KeyCode::Char('j') => Self::CursorMove(Direction::Down),
                 KeyCode::Char('k') => Self::CursorMove(Direction::Up),
                 KeyCode::Char('l') => Self::CursorMove(Direction::Right),
+                KeyCode::Char('i') => Self::EnterInsertMode,
+                _ => Self::Nop,
+            };
+            command
+        } else {
+            Self::Nop
+        }
+    }
+}
+
+pub enum InsertModeCommand {
+    LeaveInsertMode,
+    Nop,
+}
+
+impl InsertModeCommand {
+    pub fn from_key_event(event: &Event) -> Self {
+        if let Key(KeyEvent {
+            code,
+            kind: KeyEventKind::Press,
+            ..
+        }) = event
+        {
+            let command = match code {
+                KeyCode::Esc => Self::LeaveInsertMode,
                 _ => Self::Nop,
             };
             command
