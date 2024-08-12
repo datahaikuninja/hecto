@@ -17,6 +17,11 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Self {
+        let current_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            let _ = Terminal::terminate(); // explicitly ignore errors in terminate()
+            current_hook(panic_info);
+        }));
         let view = View::default();
         Self {
             should_quit: false,
