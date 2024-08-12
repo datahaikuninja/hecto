@@ -1,6 +1,7 @@
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+#[derive(Copy, Clone)]
 enum GraphemeWidth {
     Half,
     Full,
@@ -22,9 +23,32 @@ impl GraphemeWidth {
     }
 }
 
-struct Grapheme {
+fn calc_tab_width(current_pos: usize) -> usize {
+    let tabstop = 8;
+    (current_pos / tabstop + 1) * tabstop - current_pos
+}
+
+#[derive(Clone)]
+pub struct Grapheme {
     string: String,
     width: GraphemeWidth,
+}
+
+impl Grapheme {
+    pub fn is_tab(&self) -> bool {
+        self.string
+            .chars()
+            .next()
+            .expect("contents of grapheme should not be empty")
+            == '\t'
+    }
+    fn get_width_at_current_pos(&self, current_pos: usize) -> usize {
+        if self.is_tab() {
+            calc_tab_width(current_pos)
+        } else {
+            self.width.to_usize()
+        }
+    }
 }
 
 pub struct Line {
@@ -42,11 +66,14 @@ impl Line {
             .collect::<Vec<_>>();
         Self { graphemes }
     }
+    pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
+        self.graphemes.get(index).cloned()
+    }
     pub fn get_visible_graphemes(&self, left: usize, right: usize) -> String {
         let mut result = String::new();
         let mut current_pos = 0;
         for grapheme in &self.graphemes {
-            let next_pos = current_pos + grapheme.width.to_usize();
+            let next_pos = current_pos + grapheme.get_width_at_current_pos(current_pos);
             if current_pos >= right {
                 break;
             }
@@ -67,11 +94,11 @@ impl Line {
         result
     }
     pub fn calc_width_until_grapheme_index(&self, graphme_index: usize) -> usize {
-        self.graphemes
-            .iter()
-            .take(graphme_index)
-            .map(|g| g.width.to_usize())
-            .sum()
+        let mut current_pos = 0;
+        for grapheme in self.graphemes.iter().take(graphme_index) {
+            current_pos += grapheme.get_width_at_current_pos(current_pos);
+        }
+        current_pos
     }
     pub fn len(&self) -> usize {
         self.graphemes.len()
