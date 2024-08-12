@@ -10,22 +10,23 @@ use terminal::Terminal;
 mod view;
 use view::View;
 
-#[derive(Default)]
 pub struct Editor {
     should_quit: bool,
     view: View,
 }
 
 impl Editor {
-    pub fn new(filename: &str) -> Self {
-        // TODO: consider execute read_to_string inside Buffer::load().
-        let contents = std::fs::read_to_string(filename).expect("cannot open file");
-        let mut view = View::default();
-        view.load(&contents);
+    pub fn new() -> Self {
+        let view = View::default();
         Self {
             should_quit: false,
             view,
         }
+    }
+    pub fn load_file(&mut self, filename: &str) {
+        // TODO: consider execute read_to_string inside Buffer::load().
+        let contents = std::fs::read_to_string(filename).expect("cannot open file");
+        self.view.load(&contents);
     }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
