@@ -115,11 +115,11 @@ impl View {
     }
     fn get_cursor_info(&self) -> CursorInfo {
         let Location { x, y } = self.location;
-        let line = &self.buffer.lines[y];
-        let col_start = line.calc_width_until_grapheme_index(x);
-        let col_end = line.calc_width_until_grapheme_index(x + 1);
+        let line = self.buffer.lines.get(y);
+        let col_start = line.map_or(0, |line| line.calc_width_until_grapheme_index(x));
+        let col_end = line.map_or(0, |line| line.calc_width_until_grapheme_index(x + 1));
         CursorInfo {
-            grapheme: line.get_nth_grapheme(x),
+            grapheme: line.map_or(None, |line| line.get_nth_grapheme(x)),
             row: y,
             col_start,
             col_end,
