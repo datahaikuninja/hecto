@@ -3,12 +3,23 @@ use super::terminal::{Position, Size, Terminal};
 use crossterm::event::KeyCode;
 
 mod line;
+use line::Grapheme;
 
 mod buffer;
 use buffer::Buffer;
 
 mod location;
 use location::Location;
+
+struct CursorInfo {
+    // grapheme at cursor position
+    // maybe `None` if cursor is at empty line
+    grapheme: Option<Grapheme>,
+    // absolute cursor positions in virtual terminal with infinite size
+    row: usize,
+    col_start: usize,
+    col_end: usize,
+}
 
 pub struct View {
     buffer: Buffer,
@@ -85,20 +96,34 @@ impl View {
         }
     }
     pub fn get_absolute_position(&self) -> Position {
-        self.get_absolute_range().0
+        let cursor_info = self.get_cursor_info();
+        if cursor_info
+            .grapheme
+            .map_or(false, |grapheme| grapheme.is_tab())
+        {
+            // renders cursor at right end of TAB character
+            Position {
+                row: cursor_info.row,
+                col: cursor_info.col_end - 1,
+            }
+        } else {
+            Position {
+                row: cursor_info.row,
+                col: cursor_info.col_start,
+            }
+        }
     }
-    pub fn get_absolute_range(&self) -> (Position, Position) {
+    fn get_cursor_info(&self) -> CursorInfo {
         let Location { x, y } = self.location;
-        let (left, right) = self.buffer.lines.get(y).map_or((0, 0), |line| {
-            (
-                line.calc_width_until_grapheme_index(x),
-                line.calc_width_until_grapheme_index(x + 1),
-            )
-        });
-        (
-            Position { row: y, col: left },
-            Position { row: y, col: right },
-        )
+        let line = &self.buffer.lines[y];
+        let col_start = line.calc_width_until_grapheme_index(x);
+        let col_end = line.calc_width_until_grapheme_index(x + 1);
+        CursorInfo {
+            grapheme: line.get_nth_grapheme(x),
+            row: y,
+            col_start,
+            col_end,
+        }
     }
     fn render_line(&self, row: usize, text: &str) -> Result<(), std::io::Error> {
         let pos = Position { row, col: 0 };
@@ -110,7 +135,12 @@ impl View {
     fn update_scroll_offset(&mut self) -> Result<(), std::io::Error> {
         let Size { width, height } = Terminal::size()?;
         let mut offset_changed = false;
-        let (Position { row, col: left }, Position { col: right, .. }) = self.get_absolute_range();
+        let CursorInfo {
+            row,
+            col_start: left,
+            col_end: right,
+            ..
+        } = self.get_cursor_info();
 
         // Scroll vertically
         if row < self.scroll_offset.row {
