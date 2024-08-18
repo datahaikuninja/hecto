@@ -51,19 +51,24 @@ impl Grapheme {
     }
 }
 
+fn str_to_graphemes(s: &str) -> Vec<Grapheme> {
+    let graphemes = s
+        .graphemes(true)
+        .map(|s| Grapheme {
+            string: String::from(s),
+            width: GraphemeWidth::from_usize(s.width_cjk()),
+        })
+        .collect::<Vec<_>>();
+    graphemes
+}
+
 pub struct Line {
     graphemes: Vec<Grapheme>,
 }
 
 impl Line {
     pub fn from_str(s: &str) -> Self {
-        let graphemes = s
-            .graphemes(true)
-            .map(|s| Grapheme {
-                string: String::from(s),
-                width: GraphemeWidth::from_usize(s.width_cjk()),
-            })
-            .collect::<Vec<_>>();
+        let graphemes = str_to_graphemes(s);
         Self { graphemes }
     }
     pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
@@ -102,5 +107,18 @@ impl Line {
     }
     pub fn len(&self) -> usize {
         self.graphemes.len()
+    }
+    pub fn insert_char(&mut self, c: char, idx: usize) {
+        let mut result = String::new();
+        for (i, grapheme) in self.graphemes.iter().enumerate() {
+            if i == idx {
+                result.push(c);
+            }
+            result.push_str(&grapheme.string);
+        }
+        if idx >= self.len() {
+            result.push(c);
+        }
+        self.graphemes = str_to_graphemes(&result);
     }
 }

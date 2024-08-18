@@ -80,6 +80,9 @@ impl Editor {
             InsertModeCommand::LeaveInsertMode => {
                 self.mode = EditorMode::NormalMode;
             }
+            InsertModeCommand::Insert(c) => {
+                self.view.insert_char(c);
+            }
             InsertModeCommand::Nop => (),
         }
         Ok(())

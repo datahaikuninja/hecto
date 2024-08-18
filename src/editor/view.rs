@@ -87,6 +87,23 @@ impl View {
         self.update_scroll_offset()?;
         Ok(())
     }
+    pub fn insert_char(&mut self, c: char) {
+        let orig_len = self
+            .buffer
+            .lines
+            .get(self.location.y)
+            .map_or(0, |line| line.len());
+        self.buffer.insert_char(c, self.location);
+        let new_len = self
+            .buffer
+            .lines
+            .get(self.location.y)
+            .map_or(0, |line| line.len());
+        if new_len > orig_len {
+            self.location.x += 1;
+        }
+        self.needs_redraw = true;
+    }
     pub fn get_relative_position(&self) -> Position {
         let Position { row, col } = self.get_absolute_position();
         Position {

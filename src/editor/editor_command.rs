@@ -53,6 +53,7 @@ impl NormalModeCommand {
 
 pub enum InsertModeCommand {
     LeaveInsertMode,
+    Insert(char),
     Nop,
 }
 
@@ -60,11 +61,13 @@ impl InsertModeCommand {
     pub fn from_key_event(event: &Event) -> Self {
         if let Key(KeyEvent {
             code,
+            modifiers,
             kind: KeyEventKind::Press,
             ..
         }) = event
         {
             let command = match code {
+                KeyCode::Char(c) if *modifiers == KeyModifiers::NONE => Self::Insert(*c),
                 KeyCode::Esc => Self::LeaveInsertMode,
                 _ => Self::Nop,
             };
