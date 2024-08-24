@@ -1,7 +1,7 @@
 use crossterm::event::{read, Event};
 
 mod editor_command;
-use editor_command::{EditorMode, InsertModeCommand, NormalModeCommand};
+use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand};
 
 mod terminal;
 use terminal::Terminal;
@@ -65,9 +65,13 @@ impl Editor {
                 self.should_quit = true;
             }
             NormalModeCommand::CursorMove(direction) => {
-                self.view.handle_move(direction)?;
+                self.view.handle_move(direction, false)?;
             }
             NormalModeCommand::EnterInsertMode => {
+                self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::EnterInsertModeAppend => {
+                self.view.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::Nop => (),

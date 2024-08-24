@@ -60,7 +60,11 @@ impl View {
         self.needs_redraw = false;
         Ok(())
     }
-    pub fn handle_move(&mut self, direction: Direction) -> Result<(), std::io::Error> {
+    pub fn handle_move(
+        &mut self,
+        direction: Direction,
+        allow_past_end: bool,
+    ) -> Result<(), std::io::Error> {
         let Location { mut x, mut y } = self.location;
         match direction {
             Direction::Left => {
@@ -81,7 +85,12 @@ impl View {
         let n_line = self.buffer.lines.len();
         y = std::cmp::min(y, n_line.saturating_sub(1));
         let line_length = self.buffer.lines.get(y).map_or(0, |s| s.len());
-        x = std::cmp::min(x, line_length.saturating_sub(1));
+        let idx_lim = if allow_past_end {
+            line_length
+        } else {
+            line_length.saturating_sub(1)
+        };
+        x = std::cmp::min(x, idx_lim);
 
         self.location = Location { x, y };
         self.update_scroll_offset()?;

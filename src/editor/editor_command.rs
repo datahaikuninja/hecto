@@ -22,6 +22,7 @@ pub enum Direction {
 pub enum NormalModeCommand {
     CursorMove(Direction),
     EnterInsertMode,
+    EnterInsertModeAppend,
     Quit,
     Nop,
 }
@@ -42,6 +43,7 @@ impl NormalModeCommand {
                 KeyCode::Char('k') => Self::CursorMove(Direction::Up),
                 KeyCode::Char('l') => Self::CursorMove(Direction::Right),
                 KeyCode::Char('i') => Self::EnterInsertMode,
+                KeyCode::Char('a') => Self::EnterInsertModeAppend,
                 _ => Self::Nop,
             };
             command
