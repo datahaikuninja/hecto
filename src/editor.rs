@@ -30,9 +30,7 @@ impl Editor {
         }
     }
     pub fn load_file(&mut self, filename: &str) {
-        // TODO: consider execute read_to_string inside Buffer::load().
-        let contents = std::fs::read_to_string(filename).expect("cannot open file");
-        self.view.load(&contents);
+        self.view.load_file(&filename);
     }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
@@ -63,6 +61,9 @@ impl Editor {
         match command {
             NormalModeCommand::Quit => {
                 self.should_quit = true;
+            }
+            NormalModeCommand::Save => {
+                self.view.save_buffer()?;
             }
             NormalModeCommand::CursorMove(direction) => {
                 self.view.handle_move(direction, false)?;

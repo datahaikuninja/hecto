@@ -32,8 +32,8 @@ impl View {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    pub fn load(&mut self, contents: &str) {
-        self.buffer.load(contents);
+    pub fn load_file(&mut self, filename: &str) {
+        self.buffer.load_file(filename);
         self.needs_redraw = true;
     }
     pub fn render(&mut self) -> Result<(), std::io::Error> {
@@ -58,6 +58,10 @@ impl View {
             Self::draw_welcom_message()?;
         }
         self.needs_redraw = false;
+        Ok(())
+    }
+    pub fn save_buffer(&self) -> Result<(), std::io::Error> {
+        self.buffer.save()?;
         Ok(())
     }
     pub fn handle_move(
