@@ -1,18 +1,32 @@
+use std::io::Write;
+
 use super::line::Line;
 use super::Location;
 
 #[derive(Default)]
 pub struct Buffer {
     pub lines: Vec<Line>,
+    filename: Option<String>,
 }
 
 impl Buffer {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
-    pub fn load(&mut self, contents: &str) {
+    pub fn load_file(&mut self, filename: &str) {
+        let contents = std::fs::read_to_string(filename).expect("cannot open file");
         let lines: Vec<_> = contents.lines().map(Line::from_str).collect();
         self.lines = lines;
+        self.filename = Some(String::from(filename));
+    }
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        if let Some(filename) = &self.filename {
+            let mut file = std::fs::File::create(filename)?;
+            for line in &self.lines {
+                writeln!(file, "{line}")?;
+            }
+        }
+        Ok(())
     }
     pub fn get_line_length(&self, line_index: usize) -> usize {
         self.lines.get(line_index).map_or(0, |line| line.len())
