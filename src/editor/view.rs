@@ -107,23 +107,26 @@ impl View {
         self.update_scroll_offset()?;
         Ok(())
     }
-    pub fn insert_char(&mut self, c: char) {
+    pub fn insert_char(&mut self, c: char) -> Result<(), std::io::Error> {
         let orig_len = self.buffer.get_line_length(self.location.y);
         self.buffer.insert_char(c, self.location);
         let new_len = self.buffer.get_line_length(self.location.y);
         if new_len > orig_len {
             self.location.x += 1;
         }
+        self.update_scroll_offset()?;
         self.needs_redraw = true;
+        Ok(())
     }
-    pub fn handle_backspace(&mut self) {
+    pub fn handle_backspace(&mut self) -> Result<(), std::io::Error> {
         if self.location.x > 0 {
             self.location.x -= 1;
             self.buffer.delete_grapheme(self.location);
+            self.update_scroll_offset()?;
             self.needs_redraw = true;
         } else if self.location.x == 0 {
             if self.location.y == 0 {
-                return;
+                return Ok(());
             }
             let orig_len = self.buffer.get_line_length(self.location.y - 1);
             self.buffer.join_adjacent_rows(self.location.y - 1);
@@ -131,16 +134,20 @@ impl View {
                 x: orig_len,
                 y: self.location.y - 1,
             };
+            self.update_scroll_offset()?;
             self.needs_redraw = true;
         }
+        Ok(())
     }
-    pub fn insert_newline(&mut self) {
+    pub fn insert_newline(&mut self) -> Result<(), std::io::Error> {
         self.buffer.insert_newline(self.location);
         self.location = Location {
             x: 0,
             y: self.location.y + 1,
         };
+        self.update_scroll_offset()?;
         self.needs_redraw = true;
+        Ok(())
     }
     pub fn get_relative_position(&self) -> Position {
         let Position { row, col } = self.get_absolute_position();

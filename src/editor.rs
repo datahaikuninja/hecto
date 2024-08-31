@@ -86,13 +86,13 @@ impl Editor {
                 self.view.normalize_cursor_position(false)?;
             }
             InsertModeCommand::Insert(c) => {
-                self.view.insert_char(c);
+                self.view.insert_char(c)?;
             }
             InsertModeCommand::Backspace => {
-                self.view.handle_backspace();
+                self.view.handle_backspace()?;
             }
             InsertModeCommand::InsertNewLine => {
-                self.view.insert_newline();
+                self.view.insert_newline()?;
             }
             InsertModeCommand::Nop => (),
         }
