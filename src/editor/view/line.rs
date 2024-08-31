@@ -1,3 +1,5 @@
+use core::fmt;
+
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -120,5 +122,27 @@ impl Line {
             result.push(c);
         }
         self.graphemes = str_to_graphemes(&result);
+    }
+    pub fn delete_grapheme(&mut self, idx: usize) {
+        let mut result = String::new();
+
+        for (i, grapheme) in self.graphemes.iter().enumerate() {
+            if i != idx {
+                result.push_str(&grapheme.string);
+            }
+        }
+        self.graphemes = str_to_graphemes(&result);
+    }
+    pub fn push_line(&mut self, other: &Self) {
+        let mut result = self.to_string();
+        result.push_str(&other.to_string());
+        self.graphemes = str_to_graphemes(&result);
+    }
+}
+
+impl fmt::Display for Line {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        let result: String = self.graphemes.iter().map(|g| g.string.clone()).collect();
+        write!(formatter, "{result}")
     }
 }

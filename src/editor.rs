@@ -87,6 +87,9 @@ impl Editor {
             InsertModeCommand::Insert(c) => {
                 self.view.insert_char(c);
             }
+            InsertModeCommand::Backspace => {
+                self.view.handle_backspace();
+            }
             InsertModeCommand::Nop => (),
         }
         Ok(())

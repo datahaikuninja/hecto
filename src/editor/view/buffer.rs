@@ -21,4 +21,12 @@ impl Buffer {
         }
         self.lines[loc.y].insert_char(c, loc.x);
     }
+    pub fn delete_grapheme(&mut self, loc: Location) {
+        self.lines[loc.y].delete_grapheme(loc.x);
+    }
+    pub fn join_adjacent_rows(&mut self, idx: usize) {
+        let next_line = self.lines.remove(idx + 1);
+        let current_line = &mut self.lines[idx];
+        current_line.push_line(&next_line);
+    }
 }

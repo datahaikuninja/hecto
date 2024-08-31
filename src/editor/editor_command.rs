@@ -56,6 +56,7 @@ impl NormalModeCommand {
 pub enum InsertModeCommand {
     LeaveInsertMode,
     Insert(char),
+    Backspace,
     Nop,
 }
 
@@ -70,6 +71,7 @@ impl InsertModeCommand {
         {
             let command = match code {
                 KeyCode::Char(c) if *modifiers == KeyModifiers::NONE => Self::Insert(*c),
+                KeyCode::Backspace if *modifiers == KeyModifiers::NONE => Self::Backspace,
                 KeyCode::Esc => Self::LeaveInsertMode,
                 _ => Self::Nop,
             };
