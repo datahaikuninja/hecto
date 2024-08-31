@@ -1,8 +1,7 @@
-use crossterm::event::{
-    read,
-    Event::{self, Key},
-    KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-};
+use crossterm::event::{read, Event};
+
+mod editor_command;
+use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand};
 
 mod terminal;
 use terminal::Terminal;
@@ -12,6 +11,7 @@ use view::View;
 
 pub struct Editor {
     should_quit: bool,
+    mode: EditorMode,
     view: View,
 }
 
@@ -25,6 +25,7 @@ impl Editor {
         let view = View::default();
         Self {
             should_quit: false,
+            mode: EditorMode::NormalMode,
             view,
         }
     }
@@ -51,25 +52,49 @@ impl Editor {
         Ok(())
     }
     fn evaluate_evnet(&mut self, event: &Event) -> Result<(), std::io::Error> {
-        if let Key(KeyEvent {
-            code,
-            modifiers,
-            kind: KeyEventKind::Press,
-            ..
-        }) = event
-        {
-            match code {
-                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
-                    self.should_quit = true;
-                }
-                KeyCode::Char('h')
-                | KeyCode::Char('j')
-                | KeyCode::Char('k')
-                | KeyCode::Char('l') => {
-                    self.view.handle_move(*code)?;
-                }
-                _ => (),
+        match self.mode {
+            EditorMode::NormalMode => self.evaluate_evnet_in_normal_mode(event)?,
+            EditorMode::InsertMode => self.evaluate_evnet_in_insert_mode(event)?,
+        }
+        Ok(())
+    }
+    fn evaluate_evnet_in_normal_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = NormalModeCommand::from_key_event(event);
+        match command {
+            NormalModeCommand::Quit => {
+                self.should_quit = true;
             }
+            NormalModeCommand::CursorMove(direction) => {
+                self.view.handle_move(direction, false)?;
+            }
+            NormalModeCommand::EnterInsertMode => {
+                self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::EnterInsertModeAppend => {
+                self.view.handle_move(Direction::Right, true)?;
+                self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn evaluate_evnet_in_insert_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = InsertModeCommand::from_key_event(event);
+        match command {
+            InsertModeCommand::LeaveInsertMode => {
+                self.mode = EditorMode::NormalMode;
+                self.view.normalize_cursor_position(false)?;
+            }
+            InsertModeCommand::Insert(c) => {
+                self.view.insert_char(c)?;
+            }
+            InsertModeCommand::Backspace => {
+                self.view.handle_backspace()?;
+            }
+            InsertModeCommand::InsertNewLine => {
+                self.view.insert_newline()?;
+            }
+            InsertModeCommand::Nop => (),
         }
         Ok(())
     }

@@ -1,6 +1,6 @@
 use super::terminal::{Position, Size, Terminal};
 
-use crossterm::event::KeyCode;
+use super::editor_command::Direction;
 
 mod line;
 use line::Grapheme;
@@ -60,32 +60,93 @@ impl View {
         self.needs_redraw = false;
         Ok(())
     }
-    pub fn handle_move(&mut self, key_code: KeyCode) -> Result<(), std::io::Error> {
+    pub fn handle_move(
+        &mut self,
+        direction: Direction,
+        allow_past_end: bool,
+    ) -> Result<(), std::io::Error> {
         let Location { mut x, mut y } = self.location;
-        match key_code {
-            KeyCode::Char('h') => {
+        match direction {
+            Direction::Left => {
                 x = x.saturating_sub(1);
             }
-            KeyCode::Char('j') => {
+            Direction::Down => {
                 y = y.saturating_add(1);
             }
-            KeyCode::Char('k') => {
+            Direction::Up => {
                 y = y.saturating_sub(1);
             }
-            KeyCode::Char('l') => {
+            Direction::Right => {
                 x = x.saturating_add(1);
             }
-            _ => (),
         }
 
+        self.location = Location { x, y };
+        self.normalize_cursor_position(allow_past_end)?;
+        self.update_scroll_offset()?;
+        Ok(())
+    }
+    pub fn normalize_cursor_position(
+        &mut self,
+        allow_past_end: bool,
+    ) -> Result<(), std::io::Error> {
         // Ensure self.location points to valid text position.
+        let Location { mut x, mut y } = self.location;
         let n_line = self.buffer.lines.len();
         y = std::cmp::min(y, n_line.saturating_sub(1));
+
         let line_length = self.buffer.lines.get(y).map_or(0, |s| s.len());
-        x = std::cmp::min(x, line_length.saturating_sub(1));
+        let idx_lim = if allow_past_end {
+            line_length
+        } else {
+            line_length.saturating_sub(1)
+        };
+        x = std::cmp::min(x, idx_lim);
 
         self.location = Location { x, y };
         self.update_scroll_offset()?;
+        Ok(())
+    }
+    pub fn insert_char(&mut self, c: char) -> Result<(), std::io::Error> {
+        let orig_len = self.buffer.get_line_length(self.location.y);
+        self.buffer.insert_char(c, self.location);
+        let new_len = self.buffer.get_line_length(self.location.y);
+        if new_len > orig_len {
+            self.location.x += 1;
+        }
+        self.update_scroll_offset()?;
+        self.needs_redraw = true;
+        Ok(())
+    }
+    pub fn handle_backspace(&mut self) -> Result<(), std::io::Error> {
+        if self.location.x > 0 {
+            self.location.x -= 1;
+            self.buffer.delete_grapheme(self.location);
+            self.update_scroll_offset()?;
+            self.needs_redraw = true;
+        } else if self.location.x == 0 {
+            if self.location.y == 0 {
+                return Ok(());
+            }
+            let orig_len = self.buffer.get_line_length(self.location.y - 1);
+            self.buffer.join_adjacent_rows(self.location.y - 1);
+            self.location = Location {
+                x: orig_len,
+                y: self.location.y - 1,
+            };
+            self.update_scroll_offset()?;
+            self.needs_redraw = true;
+        }
+        Ok(())
+    }
+    pub fn insert_newline(&mut self) -> Result<(), std::io::Error> {
+        self.buffer.insert_newline(self.location);
+        self.location = Location {
+            x: 0,
+            y: self.location.y + 1,
+        };
+        self.update_scroll_offset()?;
+        self.needs_redraw = true;
         Ok(())
     }
     pub fn get_relative_position(&self) -> Position {
