@@ -83,6 +83,7 @@ impl Editor {
         match command {
             InsertModeCommand::LeaveInsertMode => {
                 self.mode = EditorMode::NormalMode;
+                self.view.normalize_cursor_position(false)?;
             }
             InsertModeCommand::Insert(c) => {
                 self.view.insert_char(c);

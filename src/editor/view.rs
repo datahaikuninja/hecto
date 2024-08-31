@@ -81,9 +81,20 @@ impl View {
             }
         }
 
+        self.location = Location { x, y };
+        self.normalize_cursor_position(allow_past_end)?;
+        self.update_scroll_offset()?;
+        Ok(())
+    }
+    pub fn normalize_cursor_position(
+        &mut self,
+        allow_past_end: bool,
+    ) -> Result<(), std::io::Error> {
         // Ensure self.location points to valid text position.
+        let Location { mut x, mut y } = self.location;
         let n_line = self.buffer.lines.len();
         y = std::cmp::min(y, n_line.saturating_sub(1));
+
         let line_length = self.buffer.lines.get(y).map_or(0, |s| s.len());
         let idx_lim = if allow_past_end {
             line_length
