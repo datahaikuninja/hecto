@@ -108,17 +108,9 @@ impl View {
         Ok(())
     }
     pub fn insert_char(&mut self, c: char) {
-        let orig_len = self
-            .buffer
-            .lines
-            .get(self.location.y)
-            .map_or(0, |line| line.len());
+        let orig_len = self.buffer.get_line_length(self.location.y);
         self.buffer.insert_char(c, self.location);
-        let new_len = self
-            .buffer
-            .lines
-            .get(self.location.y)
-            .map_or(0, |line| line.len());
+        let new_len = self.buffer.get_line_length(self.location.y);
         if new_len > orig_len {
             self.location.x += 1;
         }
@@ -133,11 +125,7 @@ impl View {
             if self.location.y == 0 {
                 return;
             }
-            let orig_len = self
-                .buffer
-                .lines
-                .get(self.location.y)
-                .map_or(0, |line| line.len());
+            let orig_len = self.buffer.get_line_length(self.location.y - 1);
             self.buffer.join_adjacent_rows(self.location.y - 1);
             self.location = Location {
                 x: orig_len,

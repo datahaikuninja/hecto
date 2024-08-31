@@ -14,6 +14,9 @@ impl Buffer {
         let lines: Vec<_> = contents.lines().map(Line::from_str).collect();
         self.lines = lines;
     }
+    pub fn get_line_length(&self, line_index: usize) -> usize {
+        self.lines.get(line_index).map_or(0, |line| line.len())
+    }
     pub fn insert_char(&mut self, c: char, loc: Location) {
         if loc.y >= self.lines.len() {
             // TODO: insert new line at the end of buffer
