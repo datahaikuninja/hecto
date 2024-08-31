@@ -90,6 +90,9 @@ impl Editor {
             InsertModeCommand::Backspace => {
                 self.view.handle_backspace();
             }
+            InsertModeCommand::InsertNewLine => {
+                self.view.insert_newline();
+            }
             InsertModeCommand::Nop => (),
         }
         Ok(())

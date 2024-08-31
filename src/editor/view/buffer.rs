@@ -29,4 +29,8 @@ impl Buffer {
         let current_line = &mut self.lines[idx];
         current_line.push_line(&next_line);
     }
+    pub fn insert_newline(&mut self, loc: Location) {
+        let remainder = self.lines[loc.y].split_off(loc.x);
+        self.lines.insert(loc.y + 1, remainder);
+    }
 }

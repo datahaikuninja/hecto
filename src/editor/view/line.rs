@@ -138,6 +138,12 @@ impl Line {
         result.push_str(&other.to_string());
         self.graphemes = str_to_graphemes(&result);
     }
+    pub fn split_off(&mut self, at: usize) -> Self {
+        let remainder = self.graphemes.split_off(at);
+        Self {
+            graphemes: remainder,
+        }
+    }
 }
 
 impl fmt::Display for Line {

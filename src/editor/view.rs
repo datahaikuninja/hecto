@@ -135,6 +135,14 @@ impl View {
             self.needs_redraw = true;
         }
     }
+    pub fn insert_newline(&mut self) {
+        self.buffer.insert_newline(self.location);
+        self.location = Location {
+            x: 0,
+            y: self.location.y + 1,
+        };
+        self.needs_redraw = true;
+    }
     pub fn get_relative_position(&self) -> Position {
         let Position { row, col } = self.get_absolute_position();
         Position {

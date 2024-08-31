@@ -57,6 +57,7 @@ pub enum InsertModeCommand {
     LeaveInsertMode,
     Insert(char),
     Backspace,
+    InsertNewLine,
     Nop,
 }
 
@@ -71,7 +72,9 @@ impl InsertModeCommand {
         {
             let command = match code {
                 KeyCode::Char(c) if *modifiers == KeyModifiers::NONE => Self::Insert(*c),
+                KeyCode::Tab if *modifiers == KeyModifiers::NONE => Self::Insert('\t'),
                 KeyCode::Backspace if *modifiers == KeyModifiers::NONE => Self::Backspace,
+                KeyCode::Enter if *modifiers == KeyModifiers::NONE => Self::InsertNewLine,
                 KeyCode::Esc => Self::LeaveInsertMode,
                 _ => Self::Nop,
             };
