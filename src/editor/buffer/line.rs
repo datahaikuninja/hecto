@@ -1,5 +1,6 @@
 use super::grapheme::{str_to_graphemes, Grapheme};
 
+#[derive(Default)]
 pub struct Line {
     graphemes: Vec<Grapheme>,
 }
