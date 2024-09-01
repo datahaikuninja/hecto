@@ -36,6 +36,9 @@ impl Buffer {
         self.lines.get(line_index).map_or(0, |line| line.len())
     }
     pub fn insert_char(&mut self, c: char, loc: TextLocation) {
+        if self.is_empty() {
+            self.lines.push(Line::default());
+        }
         if loc.line_idx >= self.lines.len() {
             // TODO: insert new line at the end of buffer
             return;
