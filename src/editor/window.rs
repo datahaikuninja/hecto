@@ -21,14 +21,14 @@ struct CursorInfo {
     col_end: usize,
 }
 
-pub struct View {
+pub struct Window {
     buffer: Buffer,
     needs_redraw: bool,
     location: Location,
     scroll_offset: Position,
 }
 
-impl View {
+impl Window {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -242,7 +242,7 @@ impl View {
     }
 }
 
-impl Default for View {
+impl Default for Window {
     fn default() -> Self {
         Self {
             buffer: Buffer::default(),
