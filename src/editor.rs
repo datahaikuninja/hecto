@@ -9,6 +9,8 @@ use terminal::Terminal;
 mod window;
 use window::Window;
 
+mod buffer;
+
 pub struct Editor {
     should_quit: bool,
     mode: EditorMode,

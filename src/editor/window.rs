@@ -2,14 +2,14 @@ use super::terminal::{Position, Size, Terminal};
 
 use super::editor_command::Direction;
 
-mod line;
-use line::Grapheme;
+use super::buffer::grapheme::Grapheme;
+use super::buffer::Buffer;
 
-mod buffer;
-use buffer::Buffer;
-
-mod location;
-use location::Location;
+#[derive(Copy, Clone, Default)]
+pub struct Location {
+    pub x: usize,
+    pub y: usize,
+}
 
 struct CursorInfo {
     // grapheme at cursor position

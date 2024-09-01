@@ -1,7 +1,11 @@
 use std::io::Write;
 
-use super::line::Line;
-use super::Location;
+use super::window::Location;
+
+mod line;
+use line::Line;
+
+pub mod grapheme;
 
 #[derive(Default)]
 pub struct Buffer {
