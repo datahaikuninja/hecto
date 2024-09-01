@@ -6,13 +6,15 @@ use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand
 mod terminal;
 use terminal::Terminal;
 
-mod view;
-use view::View;
+mod window;
+use window::Window;
+
+mod buffer;
 
 pub struct Editor {
     should_quit: bool,
     mode: EditorMode,
-    view: View,
+    window: Window,
 }
 
 impl Editor {
@@ -22,15 +24,15 @@ impl Editor {
             let _ = Terminal::terminate(); // explicitly ignore errors in terminate()
             current_hook(panic_info);
         }));
-        let view = View::default();
+        let view = Window::default();
         Self {
             should_quit: false,
             mode: EditorMode::NormalMode,
-            view,
+            window: view,
         }
     }
     pub fn load_file(&mut self, filename: &str) {
-        self.view.load_file(&filename);
+        self.window.load_file(&filename);
     }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
@@ -63,16 +65,16 @@ impl Editor {
                 self.should_quit = true;
             }
             NormalModeCommand::Save => {
-                self.view.save_buffer()?;
+                self.window.save_buffer()?;
             }
             NormalModeCommand::CursorMove(direction) => {
-                self.view.handle_move(direction, false)?;
+                self.window.handle_move(direction, false)?;
             }
             NormalModeCommand::EnterInsertMode => {
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::EnterInsertModeAppend => {
-                self.view.handle_move(Direction::Right, true)?;
+                self.window.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::Nop => (),
@@ -84,16 +86,16 @@ impl Editor {
         match command {
             InsertModeCommand::LeaveInsertMode => {
                 self.mode = EditorMode::NormalMode;
-                self.view.normalize_cursor_position(false)?;
+                self.window.normalize_cursor_position(false)?;
             }
             InsertModeCommand::Insert(c) => {
-                self.view.insert_char(c)?;
+                self.window.insert_char(c)?;
             }
             InsertModeCommand::Backspace => {
-                self.view.handle_backspace()?;
+                self.window.handle_backspace()?;
             }
             InsertModeCommand::InsertNewLine => {
-                self.view.insert_newline()?;
+                self.window.insert_newline()?;
             }
             InsertModeCommand::Nop => (),
         }
@@ -104,8 +106,8 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
-            self.view.render()?;
-            let pos = self.view.get_relative_position();
+            self.window.render()?;
+            let pos = self.window.get_relative_position();
             Terminal::move_cursor_to(pos)?;
         }
         Ok(())

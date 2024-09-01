@@ -2,14 +2,14 @@ use super::terminal::{Position, Size, Terminal};
 
 use super::editor_command::Direction;
 
-mod line;
-use line::Grapheme;
+use super::buffer::grapheme::Grapheme;
+use super::buffer::Buffer;
 
-mod buffer;
-use buffer::Buffer;
-
-mod location;
-use location::Location;
+#[derive(Copy, Clone, Default)]
+pub struct TextLocation {
+    pub grapheme_idx: usize,
+    pub line_idx: usize,
+}
 
 struct CursorInfo {
     // grapheme at cursor position
@@ -21,14 +21,14 @@ struct CursorInfo {
     col_end: usize,
 }
 
-pub struct View {
+pub struct Window {
     buffer: Buffer,
     needs_redraw: bool,
-    location: Location,
+    cursor_location: TextLocation,
     scroll_offset: Position,
 }
 
-impl View {
+impl Window {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -69,23 +69,29 @@ impl View {
         direction: Direction,
         allow_past_end: bool,
     ) -> Result<(), std::io::Error> {
-        let Location { mut x, mut y } = self.location;
+        let TextLocation {
+            mut grapheme_idx,
+            mut line_idx,
+        } = self.cursor_location;
         match direction {
             Direction::Left => {
-                x = x.saturating_sub(1);
+                grapheme_idx = grapheme_idx.saturating_sub(1);
             }
             Direction::Down => {
-                y = y.saturating_add(1);
+                line_idx = line_idx.saturating_add(1);
             }
             Direction::Up => {
-                y = y.saturating_sub(1);
+                line_idx = line_idx.saturating_sub(1);
             }
             Direction::Right => {
-                x = x.saturating_add(1);
+                grapheme_idx = grapheme_idx.saturating_add(1);
             }
         }
 
-        self.location = Location { x, y };
+        self.cursor_location = TextLocation {
+            grapheme_idx,
+            line_idx,
+        };
         self.normalize_cursor_position(allow_past_end)?;
         self.update_scroll_offset()?;
         Ok(())
@@ -95,48 +101,57 @@ impl View {
         allow_past_end: bool,
     ) -> Result<(), std::io::Error> {
         // Ensure self.location points to valid text position.
-        let Location { mut x, mut y } = self.location;
+        let TextLocation {
+            mut grapheme_idx,
+            mut line_idx,
+        } = self.cursor_location;
         let n_line = self.buffer.lines.len();
-        y = std::cmp::min(y, n_line.saturating_sub(1));
+        line_idx = std::cmp::min(line_idx, n_line.saturating_sub(1));
 
-        let line_length = self.buffer.lines.get(y).map_or(0, |s| s.len());
+        let line_length = self.buffer.lines.get(line_idx).map_or(0, |s| s.len());
         let idx_lim = if allow_past_end {
             line_length
         } else {
             line_length.saturating_sub(1)
         };
-        x = std::cmp::min(x, idx_lim);
+        grapheme_idx = std::cmp::min(grapheme_idx, idx_lim);
 
-        self.location = Location { x, y };
+        self.cursor_location = TextLocation {
+            grapheme_idx,
+            line_idx,
+        };
         self.update_scroll_offset()?;
         Ok(())
     }
     pub fn insert_char(&mut self, c: char) -> Result<(), std::io::Error> {
-        let orig_len = self.buffer.get_line_length(self.location.y);
-        self.buffer.insert_char(c, self.location);
-        let new_len = self.buffer.get_line_length(self.location.y);
+        let orig_len = self.buffer.get_line_length(self.cursor_location.line_idx);
+        self.buffer.insert_char(c, self.cursor_location);
+        let new_len = self.buffer.get_line_length(self.cursor_location.line_idx);
         if new_len > orig_len {
-            self.location.x += 1;
+            self.cursor_location.grapheme_idx += 1;
         }
         self.update_scroll_offset()?;
         self.needs_redraw = true;
         Ok(())
     }
     pub fn handle_backspace(&mut self) -> Result<(), std::io::Error> {
-        if self.location.x > 0 {
-            self.location.x -= 1;
-            self.buffer.delete_grapheme(self.location);
+        if self.cursor_location.grapheme_idx > 0 {
+            self.cursor_location.grapheme_idx -= 1;
+            self.buffer.delete_grapheme(self.cursor_location);
             self.update_scroll_offset()?;
             self.needs_redraw = true;
-        } else if self.location.x == 0 {
-            if self.location.y == 0 {
+        } else if self.cursor_location.grapheme_idx == 0 {
+            if self.cursor_location.line_idx == 0 {
                 return Ok(());
             }
-            let orig_len = self.buffer.get_line_length(self.location.y - 1);
-            self.buffer.join_adjacent_rows(self.location.y - 1);
-            self.location = Location {
-                x: orig_len,
-                y: self.location.y - 1,
+            let orig_len = self
+                .buffer
+                .get_line_length(self.cursor_location.line_idx - 1);
+            self.buffer
+                .join_adjacent_rows(self.cursor_location.line_idx - 1);
+            self.cursor_location = TextLocation {
+                grapheme_idx: orig_len,
+                line_idx: self.cursor_location.line_idx - 1,
             };
             self.update_scroll_offset()?;
             self.needs_redraw = true;
@@ -144,10 +159,10 @@ impl View {
         Ok(())
     }
     pub fn insert_newline(&mut self) -> Result<(), std::io::Error> {
-        self.buffer.insert_newline(self.location);
-        self.location = Location {
-            x: 0,
-            y: self.location.y + 1,
+        self.buffer.insert_newline(self.cursor_location);
+        self.cursor_location = TextLocation {
+            grapheme_idx: 0,
+            line_idx: self.cursor_location.line_idx + 1,
         };
         self.update_scroll_offset()?;
         self.needs_redraw = true;
@@ -179,13 +194,18 @@ impl View {
         }
     }
     fn get_cursor_info(&self) -> CursorInfo {
-        let Location { x, y } = self.location;
-        let line = self.buffer.lines.get(y);
-        let col_start = line.map_or(0, |line| line.calc_width_until_grapheme_index(x));
-        let col_end = line.map_or(0, |line| line.calc_width_until_grapheme_index(x + 1));
+        let TextLocation {
+            grapheme_idx,
+            line_idx,
+        } = self.cursor_location;
+        let line = self.buffer.lines.get(line_idx);
+        let col_start = line.map_or(0, |line| line.calc_width_until_grapheme_index(grapheme_idx));
+        let col_end = line.map_or(0, |line| {
+            line.calc_width_until_grapheme_index(grapheme_idx + 1)
+        });
         CursorInfo {
-            grapheme: line.map_or(None, |line| line.get_nth_grapheme(x)),
-            row: y,
+            grapheme: line.map_or(None, |line| line.get_nth_grapheme(grapheme_idx)),
+            row: line_idx,
             col_start,
             col_end,
         }
@@ -242,12 +262,12 @@ impl View {
     }
 }
 
-impl Default for View {
+impl Default for Window {
     fn default() -> Self {
         Self {
             buffer: Buffer::default(),
             needs_redraw: true,
-            location: Location::default(),
+            cursor_location: TextLocation::default(),
             scroll_offset: Position::default(),
         }
     }

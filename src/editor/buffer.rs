@@ -1,7 +1,11 @@
 use std::io::Write;
 
-use super::line::Line;
-use super::Location;
+use super::window::TextLocation;
+
+mod line;
+use line::Line;
+
+pub mod grapheme;
 
 #[derive(Default)]
 pub struct Buffer {
@@ -31,23 +35,23 @@ impl Buffer {
     pub fn get_line_length(&self, line_index: usize) -> usize {
         self.lines.get(line_index).map_or(0, |line| line.len())
     }
-    pub fn insert_char(&mut self, c: char, loc: Location) {
-        if loc.y >= self.lines.len() {
+    pub fn insert_char(&mut self, c: char, loc: TextLocation) {
+        if loc.line_idx >= self.lines.len() {
             // TODO: insert new line at the end of buffer
             return;
         }
-        self.lines[loc.y].insert_char(c, loc.x);
+        self.lines[loc.line_idx].insert_char(c, loc.grapheme_idx);
     }
-    pub fn delete_grapheme(&mut self, loc: Location) {
-        self.lines[loc.y].delete_grapheme(loc.x);
+    pub fn delete_grapheme(&mut self, loc: TextLocation) {
+        self.lines[loc.line_idx].delete_grapheme(loc.grapheme_idx);
     }
     pub fn join_adjacent_rows(&mut self, idx: usize) {
         let next_line = self.lines.remove(idx + 1);
         let current_line = &mut self.lines[idx];
         current_line.push_line(&next_line);
     }
-    pub fn insert_newline(&mut self, loc: Location) {
-        let remainder = self.lines[loc.y].split_off(loc.x);
-        self.lines.insert(loc.y + 1, remainder);
+    pub fn insert_newline(&mut self, loc: TextLocation) {
+        let remainder = self.lines[loc.line_idx].split_off(loc.grapheme_idx);
+        self.lines.insert(loc.line_idx + 1, remainder);
     }
 }
