@@ -1,5 +1,3 @@
-use core::fmt;
-
 use super::grapheme::{str_to_graphemes, Grapheme};
 
 pub struct Line {
@@ -84,8 +82,8 @@ impl Line {
     }
 }
 
-impl fmt::Display for Line {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Line {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         let result: String = self
             .graphemes
             .iter()
