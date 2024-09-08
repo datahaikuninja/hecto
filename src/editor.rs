@@ -6,15 +6,27 @@ use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand
 mod terminal;
 use terminal::Terminal;
 
+mod status_bar;
+use status_bar::StatusBar;
+
 mod window;
 use window::Window;
 
 mod buffer;
 
+#[derive(Default, Eq, PartialEq, Debug)]
+pub struct DocumentStatus {
+    total_lines: usize,
+    current_line_index: usize,
+    is_modified: bool,
+    file_name: Option<String>,
+}
+
 pub struct Editor {
     should_quit: bool,
     mode: EditorMode,
     window: Window,
+    status_bar: StatusBar,
 }
 
 impl Editor {
@@ -24,15 +36,20 @@ impl Editor {
             let _ = Terminal::terminate(); // explicitly ignore errors in terminate()
             current_hook(panic_info);
         }));
-        let view = Window::default();
+        let status_bar_height = 1;
+        let message_bar_height = 1;
+        let view = Window::new(status_bar_height + message_bar_height);
         Self {
             should_quit: false,
             mode: EditorMode::NormalMode,
             window: view,
+            status_bar: StatusBar::new(message_bar_height),
         }
     }
     pub fn load_file(&mut self, filename: &str) {
         self.window.load_file(&filename);
+        let status = self.window.get_status();
+        self.status_bar.update_status(status);
     }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
@@ -48,6 +65,8 @@ impl Editor {
             }
             let event = read()?;
             self.evaluate_evnet(&event)?;
+            let status = self.window.get_status();
+            self.status_bar.update_status(status);
         }
         Ok(())
     }
@@ -107,6 +126,7 @@ impl Editor {
             print!("Goodbye!\r\n");
         } else {
             self.window.render()?;
+            self.status_bar.render()?;
             let pos = self.window.get_relative_position();
             Terminal::move_cursor_to(pos)?;
         }

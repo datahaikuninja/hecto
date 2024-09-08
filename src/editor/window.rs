@@ -5,6 +5,8 @@ use super::editor_command::Direction;
 use super::buffer::grapheme::Grapheme;
 use super::buffer::Buffer;
 
+use super::DocumentStatus;
+
 #[derive(Copy, Clone, Default)]
 pub struct TextLocation {
     pub grapheme_idx: usize,
@@ -26,15 +28,37 @@ pub struct Window {
     needs_redraw: bool,
     cursor_location: TextLocation,
     scroll_offset: Position,
+    size: Size,
 }
 
 impl Window {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+    pub fn new(margin: usize) -> Self {
+        let size = Terminal::size().expect("Failed to get terminal size.");
+        Self {
+            buffer: Buffer::default(),
+            needs_redraw: true,
+            cursor_location: TextLocation::default(),
+            scroll_offset: Position::default(),
+            size: Size {
+                width: size.width,
+                height: size.height - margin,
+            },
+        }
+    }
     pub fn load_file(&mut self, filename: &str) {
         self.buffer.load_file(filename);
         self.needs_redraw = true;
+    }
+    pub fn get_status(&self) -> DocumentStatus {
+        DocumentStatus {
+            total_lines: self.buffer.get_n_lines(),
+            current_line_index: self.cursor_location.line_idx,
+            is_modified: self.buffer.modified,
+            file_name: self.buffer.get_filename(),
+        }
     }
     pub fn render(&mut self) -> Result<(), std::io::Error> {
         // TODO: separate implementation of render()
@@ -43,7 +67,7 @@ impl Window {
             return Ok(());
         }
         let top = self.scroll_offset.row;
-        let Size { height, width } = Terminal::size()?;
+        let Size { height, width } = self.size;
         for i in 0..height {
             if let Some(line) = self.buffer.lines.get(i + top) {
                 let left = self.scroll_offset.col;
@@ -55,12 +79,12 @@ impl Window {
             }
         }
         if self.buffer.is_empty() {
-            Self::draw_welcom_message()?;
+            self.draw_welcom_message()?;
         }
         self.needs_redraw = false;
         Ok(())
     }
-    pub fn save_buffer(&self) -> Result<(), std::io::Error> {
+    pub fn save_buffer(&mut self) -> Result<(), std::io::Error> {
         self.buffer.save()?;
         Ok(())
     }
@@ -218,7 +242,7 @@ impl Window {
         Ok(())
     }
     fn update_scroll_offset(&mut self) -> Result<(), std::io::Error> {
-        let Size { width, height } = Terminal::size()?;
+        let Size { width, height } = self.size;
         let mut offset_changed = false;
         let CursorInfo {
             row,
@@ -247,11 +271,11 @@ impl Window {
         self.needs_redraw = self.needs_redraw || offset_changed;
         Ok(())
     }
-    fn draw_welcom_message() -> Result<(), std::io::Error> {
+    fn draw_welcom_message(&self) -> Result<(), std::io::Error> {
         // make message content
         let message = format!("{} editor -- v{}", Self::NAME, Self::VERSION);
         // calculate draw position
-        let Size { height, width } = Terminal::size()?;
+        let Size { height, width } = self.size;
         let row = height / 3;
         let col = (width - message.len()) / 2;
         // draw messages and column of tildes
@@ -259,16 +283,5 @@ impl Window {
         Terminal::move_cursor_to(pos)?;
         Terminal::print(&message)?;
         Ok(())
-    }
-}
-
-impl Default for Window {
-    fn default() -> Self {
-        Self {
-            buffer: Buffer::default(),
-            needs_redraw: true,
-            cursor_location: TextLocation::default(),
-            scroll_offset: Position::default(),
-        }
     }
 }
