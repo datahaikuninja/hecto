@@ -35,6 +35,12 @@ impl Buffer {
     pub fn get_line_length(&self, line_index: usize) -> usize {
         self.lines.get(line_index).map_or(0, |line| line.len())
     }
+    pub fn get_n_lines(&self) -> usize {
+        self.lines.len()
+    }
+    pub fn get_filename(&self) -> Option<String> {
+        self.filename.clone()
+    }
     pub fn insert_char(&mut self, c: char, loc: TextLocation) {
         if self.is_empty() {
             self.lines.push(Line::default());
