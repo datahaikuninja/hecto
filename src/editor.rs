@@ -1,7 +1,9 @@
 use crossterm::event::{read, Event};
 
 mod editor_command;
-use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand};
+use editor_command::{
+    CmdlineModeCommand, Direction, EditorMode, InsertModeCommand, NormalModeCommand,
+};
 
 mod terminal;
 use terminal::Terminal;
@@ -74,6 +76,7 @@ impl Editor {
         match self.mode {
             EditorMode::NormalMode => self.evaluate_evnet_in_normal_mode(event)?,
             EditorMode::InsertMode => self.evaluate_evnet_in_insert_mode(event)?,
+            EditorMode::CmdlineMode => self.evalueate_event_in_cmdline_mode(event)?,
         }
         Ok(())
     }
@@ -96,6 +99,10 @@ impl Editor {
                 self.window.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
             }
+            NormalModeCommand::EnterCmdlineMode => {
+                self.mode = EditorMode::CmdlineMode;
+                Terminal::print_log("Entered cmdline mode")?;
+            }
             NormalModeCommand::Nop => (),
         }
         Ok(())
@@ -117,6 +124,17 @@ impl Editor {
                 self.window.insert_newline()?;
             }
             InsertModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn evalueate_event_in_cmdline_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = CmdlineModeCommand::from_key_event(event);
+        match command {
+            CmdlineModeCommand::LeaveCmdlineMode => {
+                self.mode = EditorMode::NormalMode;
+                Terminal::print_log("Leaved cmdline mode")?;
+            }
+            CmdlineModeCommand::Nop => (),
         }
         Ok(())
     }

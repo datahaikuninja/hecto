@@ -4,6 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 pub enum EditorMode {
     NormalMode,
     InsertMode,
+    CmdlineMode,
 }
 
 impl Default for EditorMode {
@@ -23,6 +24,7 @@ pub enum NormalModeCommand {
     CursorMove(Direction),
     EnterInsertMode,
     EnterInsertModeAppend,
+    EnterCmdlineMode,
     Save,
     Quit,
     Nop,
@@ -46,6 +48,7 @@ impl NormalModeCommand {
                 KeyCode::Char('l') => Self::CursorMove(Direction::Right),
                 KeyCode::Char('i') => Self::EnterInsertMode,
                 KeyCode::Char('a') => Self::EnterInsertModeAppend,
+                KeyCode::Char(':') => Self::EnterCmdlineMode,
                 _ => Self::Nop,
             };
             command
@@ -79,6 +82,35 @@ impl InsertModeCommand {
                 KeyCode::Enter if *modifiers == KeyModifiers::NONE => Self::InsertNewLine,
                 KeyCode::Esc => Self::LeaveInsertMode,
                 _ => Self::Nop,
+            };
+            command
+        } else {
+            Self::Nop
+        }
+    }
+}
+
+pub enum CmdlineModeCommand {
+    LeaveCmdlineMode,
+    Nop,
+}
+
+impl CmdlineModeCommand {
+    pub fn from_key_event(event: &Event) -> Self {
+        if let Key(KeyEvent {
+            code,
+            modifiers,
+            kind: KeyEventKind::Press,
+            ..
+        }) = event
+        {
+            let command = if *modifiers == KeyModifiers::NONE {
+                match code {
+                    KeyCode::Esc => Self::LeaveCmdlineMode,
+                    _ => Self::Nop,
+                }
+            } else {
+                Self::Nop
             };
             command
         } else {
