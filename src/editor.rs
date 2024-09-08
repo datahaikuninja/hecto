@@ -48,6 +48,8 @@ impl Editor {
     }
     pub fn load_file(&mut self, filename: &str) {
         self.window.load_file(&filename);
+        let status = self.window.get_status();
+        self.status_bar.update_status(status);
     }
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();

@@ -31,7 +31,27 @@ impl StatusBar {
         if !self.needs_redraw {
             return Ok(());
         }
-        let mut status_str = format!("{:?}", self.current_status);
+        let buffer_name = self
+            .current_status
+            .file_name
+            .clone()
+            .unwrap_or(String::from("[No Name]"));
+        let modified_status_str = if self.current_status.is_modified {
+            "[+]"
+        } else {
+            ""
+        };
+        let left_status = format!("{} {}", buffer_name, modified_status_str);
+        let right_status = format!(
+            "{}/{}",
+            self.current_status.current_line_index + 1, // 0-idx to 1-idx
+            usize::max(1, self.current_status.total_lines), // If the buffer is empty, it is treated as a single line.
+        );
+        let padding_len = self
+            .width
+            .saturating_sub(left_status.len())
+            .saturating_sub(right_status.len());
+        let mut status_str = left_status + &" ".repeat(padding_len) + &right_status;
         status_str.truncate(self.width);
         Terminal::move_cursor_to(Position {
             col: 0,
