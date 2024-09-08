@@ -11,6 +11,7 @@ pub mod grapheme;
 pub struct Buffer {
     pub lines: Vec<Line>,
     filename: Option<String>,
+    pub modified: bool,
 }
 
 impl Buffer {
@@ -23,13 +24,14 @@ impl Buffer {
         self.lines = lines;
         self.filename = Some(String::from(filename));
     }
-    pub fn save(&self) -> Result<(), std::io::Error> {
+    pub fn save(&mut self) -> Result<(), std::io::Error> {
         if let Some(filename) = &self.filename {
             let mut file = std::fs::File::create(filename)?;
             for line in &self.lines {
                 writeln!(file, "{line}")?;
             }
         }
+        self.modified = false;
         Ok(())
     }
     pub fn get_line_length(&self, line_index: usize) -> usize {
@@ -50,17 +52,21 @@ impl Buffer {
             return;
         }
         self.lines[loc.line_idx].insert_char(c, loc.grapheme_idx);
+        self.modified = true;
     }
     pub fn delete_grapheme(&mut self, loc: TextLocation) {
         self.lines[loc.line_idx].delete_grapheme(loc.grapheme_idx);
+        self.modified = true;
     }
     pub fn join_adjacent_rows(&mut self, idx: usize) {
         let next_line = self.lines.remove(idx + 1);
         let current_line = &mut self.lines[idx];
         current_line.push_line(&next_line);
+        self.modified = true;
     }
     pub fn insert_newline(&mut self, loc: TextLocation) {
         let remainder = self.lines[loc.line_idx].split_off(loc.grapheme_idx);
         self.lines.insert(loc.line_idx + 1, remainder);
+        self.modified = true;
     }
 }

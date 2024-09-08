@@ -56,7 +56,7 @@ impl Window {
         DocumentStatus {
             total_lines: self.buffer.get_n_lines(),
             current_line_index: self.cursor_location.line_idx,
-            is_modified: true,
+            is_modified: self.buffer.modified,
             file_name: self.buffer.get_filename(),
         }
     }
@@ -84,7 +84,7 @@ impl Window {
         self.needs_redraw = false;
         Ok(())
     }
-    pub fn save_buffer(&self) -> Result<(), std::io::Error> {
+    pub fn save_buffer(&mut self) -> Result<(), std::io::Error> {
         self.buffer.save()?;
         Ok(())
     }
