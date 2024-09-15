@@ -6,7 +6,7 @@ use editor_command::{
 };
 
 mod terminal;
-use terminal::Terminal;
+use terminal::{Size, Terminal};
 
 mod status_bar;
 use status_bar::StatusBar;
@@ -15,6 +15,9 @@ mod window;
 use window::Window;
 
 mod buffer;
+
+mod command_bar;
+use command_bar::CommandBar;
 
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
@@ -29,6 +32,7 @@ pub struct Editor {
     mode: EditorMode,
     window: Window,
     status_bar: StatusBar,
+    command_bar: CommandBar,
 }
 
 impl Editor {
@@ -41,11 +45,13 @@ impl Editor {
         let status_bar_height = 1;
         let message_bar_height = 1;
         let view = Window::new(status_bar_height + message_bar_height);
+        let Size { height, .. } = Terminal::size().expect("Coud not get terminal size!");
         Self {
             should_quit: false,
             mode: EditorMode::NormalMode,
             window: view,
             status_bar: StatusBar::new(message_bar_height),
+            command_bar: CommandBar::new(height - 1),
         }
     }
     pub fn load_file(&mut self, filename: &str) {
@@ -101,7 +107,6 @@ impl Editor {
             }
             NormalModeCommand::EnterCmdlineMode => {
                 self.mode = EditorMode::CmdlineMode;
-                Terminal::print_log("Entered cmdline mode")?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -132,7 +137,9 @@ impl Editor {
         match command {
             CmdlineModeCommand::LeaveCmdlineMode => {
                 self.mode = EditorMode::NormalMode;
-                Terminal::print_log("Leaved cmdline mode")?;
+            }
+            CmdlineModeCommand::Insert(c) => {
+                self.command_bar.insert_char(c);
             }
             CmdlineModeCommand::Nop => (),
         }
@@ -145,6 +152,7 @@ impl Editor {
         } else {
             self.window.render()?;
             self.status_bar.render()?;
+            self.command_bar.render()?;
             let pos = self.window.get_relative_position();
             Terminal::move_cursor_to(pos)?;
         }
