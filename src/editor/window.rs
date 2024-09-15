@@ -88,6 +88,10 @@ impl Window {
         self.buffer.save()?;
         Ok(())
     }
+    pub fn save_buffer_with_filename(&mut self, filename: &str) -> Result<(), std::io::Error> {
+        self.buffer.save_as_filename(filename)?;
+        Ok(())
+    }
     pub fn handle_move(
         &mut self,
         direction: Direction,

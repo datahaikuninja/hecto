@@ -139,12 +139,15 @@ impl Editor {
             }
             CmdlineModeCommand::Execute => {
                 let raw_cmdline = self.command_bar.get_current_cmdline();
-                let cmd = CmdlineCommands::from_str(&raw_cmdline);
-                if let Some(cmd) = cmd {
-                    self.execute_cmdline_command(cmd)?;
-                    self.command_bar.clear_cmdline();
-                } else {
-                    Terminal::print_log(&format!("No such command: {}", raw_cmdline))?;
+                if raw_cmdline.len() >= 1 {
+                    let cmd = CmdlineCommands::parse_cmdline(&raw_cmdline);
+                    if let Some(cmd) = cmd {
+                        self.execute_cmdline_command(cmd)?;
+                        self.command_bar.clear_cmdline();
+                    } else {
+                        let raw_cmd = &raw_cmdline[0];
+                        Terminal::print_log(&format!("No such command: {}", raw_cmd))?;
+                    }
                 }
                 self.mode = EditorMode::NormalMode;
             }
@@ -165,6 +168,9 @@ impl Editor {
             }
             CmdlineCommands::Write => {
                 self.window.save_buffer()?;
+            }
+            CmdlineCommands::Saveas(filename) => {
+                self.window.save_buffer_with_filename(&filename)?;
             }
         }
         Ok(())
