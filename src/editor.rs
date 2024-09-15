@@ -141,14 +141,16 @@ impl Editor {
                 let raw_cmdline = self.command_bar.get_current_cmdline();
                 if raw_cmdline.len() >= 1 {
                     let cmd = CmdlineCommands::parse_cmdline(&raw_cmdline);
-                    if let Some(cmd) = cmd {
-                        self.execute_cmdline_command(cmd)?;
-                        self.command_bar.clear_cmdline();
-                    } else {
-                        let raw_cmd = &raw_cmdline[0];
-                        Terminal::print_log(&format!("No such command: {}", raw_cmd))?;
+                    match cmd {
+                        Ok(cmd) => {
+                            self.execute_cmdline_command(cmd)?;
+                        }
+                        Err(msg) => {
+                            Terminal::print_log(&msg)?;
+                        }
                     }
                 }
+                self.command_bar.clear_cmdline();
                 self.mode = EditorMode::NormalMode;
             }
             CmdlineModeCommand::Insert(c) => {

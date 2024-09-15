@@ -5,12 +5,18 @@ pub enum CmdlineCommands {
 }
 
 impl CmdlineCommands {
-    pub fn parse_cmdline(cmdline: &Vec<String>) -> Option<Self> {
+    pub fn parse_cmdline(cmdline: &Vec<String>) -> Result<Self, String> {
         match cmdline[0].as_str() {
-            "q" => Some(Self::Quit),
-            "w" => Some(Self::Write),
-            "saveas" => Some(Self::Saveas(cmdline[1].clone())),
-            _ => None,
+            "q" => Ok(Self::Quit),
+            "w" => Ok(Self::Write),
+            "saveas" => {
+                if cmdline.len() >= 2 {
+                    Ok(Self::Saveas(cmdline[1].clone()))
+                } else {
+                    Err("No filename provided for `saveas` command.".to_string())
+                }
+            }
+            _ => Err(format!("No such command: {}", cmdline[0])),
         }
     }
 }
