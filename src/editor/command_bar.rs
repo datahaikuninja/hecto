@@ -1,4 +1,5 @@
 use super::buffer::Line;
+use super::terminal::Position;
 use super::Terminal;
 
 pub struct CommandBar {
@@ -19,11 +20,22 @@ impl CommandBar {
     }
     pub fn render(&mut self) -> Result<(), std::io::Error> {
         let message = format!("{}{}", self.prompt, self.cmdline);
+        Terminal::move_cursor_to(Position {
+            row: self.pos_y,
+            col: 0,
+        })?;
+        Terminal::clear_line()?;
         Terminal::print(&message)?;
         Ok(())
     }
 
     pub fn insert_char(&mut self, c: char) {
         self.cmdline.insert_char(c, self.cmdline.len());
+    }
+
+    pub fn handle_backspace(&mut self) {
+        if self.cmdline.len() > 0 {
+            self.cmdline.delete_grapheme(self.cmdline.len() - 1);
+        }
     }
 }

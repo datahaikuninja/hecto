@@ -93,6 +93,7 @@ impl InsertModeCommand {
 pub enum CmdlineModeCommand {
     LeaveCmdlineMode,
     Insert(char),
+    Backspace,
     Nop,
 }
 
@@ -109,6 +110,7 @@ impl CmdlineModeCommand {
                 match code {
                     KeyCode::Esc => Self::LeaveCmdlineMode,
                     KeyCode::Char(c) => Self::Insert(*c),
+                    KeyCode::Backspace => Self::Backspace,
                     _ => Self::Nop,
                 }
             } else {
