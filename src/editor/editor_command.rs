@@ -25,8 +25,6 @@ pub enum NormalModeCommand {
     EnterInsertMode,
     EnterInsertModeAppend,
     EnterCmdlineMode,
-    Save,
-    Quit,
     Nop,
 }
 
@@ -40,8 +38,6 @@ impl NormalModeCommand {
         }) = event
         {
             let command = match code {
-                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => Self::Quit,
-                KeyCode::Char('s') if *modifiers == KeyModifiers::CONTROL => Self::Save,
                 KeyCode::Char('h') => Self::CursorMove(Direction::Left),
                 KeyCode::Char('j') => Self::CursorMove(Direction::Down),
                 KeyCode::Char('k') => Self::CursorMove(Direction::Up),

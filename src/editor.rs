@@ -92,12 +92,6 @@ impl Editor {
     fn evaluate_evnet_in_normal_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
         let command = NormalModeCommand::from_key_event(event);
         match command {
-            NormalModeCommand::Quit => {
-                self.should_quit = true;
-            }
-            NormalModeCommand::Save => {
-                self.window.save_buffer()?;
-            }
             NormalModeCommand::CursorMove(direction) => {
                 self.window.handle_move(direction, false)?;
             }
