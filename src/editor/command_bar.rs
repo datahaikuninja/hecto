@@ -41,7 +41,7 @@ impl CommandBar {
     pub fn clear_cmdline(&mut self) {
         self.cmdline = Line::from_str("");
     }
-    pub fn execute(&mut self) {
-        Terminal::print_log(&format!("executed {}", self.cmdline)).unwrap();
+    pub fn get_current_cmdline(&self) -> String {
+        self.cmdline.to_string()
     }
 }

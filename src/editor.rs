@@ -19,6 +19,9 @@ mod buffer;
 mod command_bar;
 use command_bar::CommandBar;
 
+mod cmdline_commands;
+use cmdline_commands::CmdlineCommands;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
@@ -143,8 +146,15 @@ impl Editor {
                 Terminal::print_log("leave command line mode")?;
             }
             CmdlineModeCommand::Execute => {
-                self.command_bar.execute();
-                self.command_bar.clear_cmdline();
+                let raw_cmdline = self.command_bar.get_current_cmdline();
+                let cmd = CmdlineCommands::from_str(&raw_cmdline);
+                if let Some(cmd) = cmd {
+                    self.execute_cmdline_command(cmd)?;
+                    self.command_bar.clear_cmdline();
+                } else {
+                    Terminal::print_log(&format!("No such command: {}", raw_cmdline))?;
+                }
+                self.mode = EditorMode::NormalMode;
             }
             CmdlineModeCommand::Insert(c) => {
                 self.command_bar.insert_char(c);
@@ -155,6 +165,17 @@ impl Editor {
                 Terminal::print_log("Backspace in command line mode")?;
             }
             CmdlineModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn execute_cmdline_command(&mut self, cmd: CmdlineCommands) -> Result<(), std::io::Error> {
+        match cmd {
+            CmdlineCommands::Quit => {
+                self.should_quit = true;
+            }
+            CmdlineCommands::Write => {
+                self.window.save_buffer()?;
+            }
         }
         Ok(())
     }
