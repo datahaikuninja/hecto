@@ -111,7 +111,6 @@ impl Editor {
             NormalModeCommand::EnterCmdlineMode => {
                 self.mode = EditorMode::CmdlineMode;
                 self.command_bar.clear_cmdline();
-                Terminal::print_log("enter command line mode")?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -143,7 +142,6 @@ impl Editor {
             CmdlineModeCommand::LeaveCmdlineMode => {
                 self.mode = EditorMode::NormalMode;
                 self.command_bar.clear_cmdline();
-                Terminal::print_log("leave command line mode")?;
             }
             CmdlineModeCommand::Execute => {
                 let raw_cmdline = self.command_bar.get_current_cmdline();
@@ -158,11 +156,9 @@ impl Editor {
             }
             CmdlineModeCommand::Insert(c) => {
                 self.command_bar.insert_char(c);
-                Terminal::print_log("inser char in command line mode")?;
             }
             CmdlineModeCommand::Backspace => {
                 self.command_bar.handle_backspace();
-                Terminal::print_log("Backspace in command line mode")?;
             }
             CmdlineModeCommand::Nop => (),
         }
