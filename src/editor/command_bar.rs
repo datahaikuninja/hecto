@@ -38,4 +38,8 @@ impl CommandBar {
             self.cmdline.delete_grapheme(self.cmdline.len() - 1);
         }
     }
+
+    pub fn clear_cmdline(&mut self) {
+        self.cmdline = Line::from_str("");
+    }
 }

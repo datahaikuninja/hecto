@@ -107,6 +107,7 @@ impl Editor {
             }
             NormalModeCommand::EnterCmdlineMode => {
                 self.mode = EditorMode::CmdlineMode;
+                self.command_bar.clear_cmdline();
                 Terminal::print_log("enter command line mode")?;
             }
             NormalModeCommand::Nop => (),
@@ -138,6 +139,7 @@ impl Editor {
         match command {
             CmdlineModeCommand::LeaveCmdlineMode => {
                 self.mode = EditorMode::NormalMode;
+                self.command_bar.clear_cmdline();
                 Terminal::print_log("leave command line mode")?;
             }
             CmdlineModeCommand::Insert(c) => {
