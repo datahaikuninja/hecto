@@ -142,6 +142,10 @@ impl Editor {
                 self.command_bar.clear_cmdline();
                 Terminal::print_log("leave command line mode")?;
             }
+            CmdlineModeCommand::Execute => {
+                self.command_bar.execute();
+                self.command_bar.clear_cmdline();
+            }
             CmdlineModeCommand::Insert(c) => {
                 self.command_bar.insert_char(c);
                 Terminal::print_log("inser char in command line mode")?;

@@ -92,6 +92,7 @@ impl InsertModeCommand {
 
 pub enum CmdlineModeCommand {
     LeaveCmdlineMode,
+    Execute,
     Insert(char),
     Backspace,
     Nop,
@@ -109,6 +110,7 @@ impl CmdlineModeCommand {
             let command = if *modifiers == KeyModifiers::NONE {
                 match code {
                     KeyCode::Esc => Self::LeaveCmdlineMode,
+                    KeyCode::Enter => Self::Execute,
                     KeyCode::Char(c) => Self::Insert(*c),
                     KeyCode::Backspace => Self::Backspace,
                     _ => Self::Nop,
