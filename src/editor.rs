@@ -1,10 +1,12 @@
 use crossterm::event::{read, Event};
 
 mod editor_command;
-use editor_command::{Direction, EditorMode, InsertModeCommand, NormalModeCommand};
+use editor_command::{
+    CmdlineModeCommand, Direction, EditorMode, InsertModeCommand, NormalModeCommand,
+};
 
 mod terminal;
-use terminal::Terminal;
+use terminal::{Size, Terminal};
 
 mod status_bar;
 use status_bar::StatusBar;
@@ -13,6 +15,12 @@ mod window;
 use window::Window;
 
 mod buffer;
+
+mod command_bar;
+use command_bar::CommandBar;
+
+mod cmdline_commands;
+use cmdline_commands::CmdlineCommands;
 
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
@@ -27,6 +35,7 @@ pub struct Editor {
     mode: EditorMode,
     window: Window,
     status_bar: StatusBar,
+    command_bar: CommandBar,
 }
 
 impl Editor {
@@ -39,11 +48,13 @@ impl Editor {
         let status_bar_height = 1;
         let message_bar_height = 1;
         let view = Window::new(status_bar_height + message_bar_height);
+        let Size { height, .. } = Terminal::size().expect("Coud not get terminal size!");
         Self {
             should_quit: false,
             mode: EditorMode::NormalMode,
             window: view,
             status_bar: StatusBar::new(message_bar_height),
+            command_bar: CommandBar::new(height - 1),
         }
     }
     pub fn load_file(&mut self, filename: &str) {
@@ -74,18 +85,13 @@ impl Editor {
         match self.mode {
             EditorMode::NormalMode => self.evaluate_evnet_in_normal_mode(event)?,
             EditorMode::InsertMode => self.evaluate_evnet_in_insert_mode(event)?,
+            EditorMode::CmdlineMode => self.evalueate_event_in_cmdline_mode(event)?,
         }
         Ok(())
     }
     fn evaluate_evnet_in_normal_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
         let command = NormalModeCommand::from_key_event(event);
         match command {
-            NormalModeCommand::Quit => {
-                self.should_quit = true;
-            }
-            NormalModeCommand::Save => {
-                self.window.save_buffer()?;
-            }
             NormalModeCommand::CursorMove(direction) => {
                 self.window.handle_move(direction, false)?;
             }
@@ -95,6 +101,10 @@ impl Editor {
             NormalModeCommand::EnterInsertModeAppend => {
                 self.window.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::EnterCmdlineMode => {
+                self.mode = EditorMode::CmdlineMode;
+                self.command_bar.clear_cmdline();
             }
             NormalModeCommand::Nop => (),
         }
@@ -120,6 +130,53 @@ impl Editor {
         }
         Ok(())
     }
+    fn evalueate_event_in_cmdline_mode(&mut self, event: &Event) -> Result<(), std::io::Error> {
+        let command = CmdlineModeCommand::from_key_event(event);
+        match command {
+            CmdlineModeCommand::LeaveCmdlineMode => {
+                self.mode = EditorMode::NormalMode;
+                self.command_bar.clear_cmdline();
+            }
+            CmdlineModeCommand::Execute => {
+                let raw_cmdline = self.command_bar.get_current_cmdline();
+                if raw_cmdline.len() >= 1 {
+                    let cmd = CmdlineCommands::parse_cmdline(&raw_cmdline);
+                    match cmd {
+                        Ok(cmd) => {
+                            self.execute_cmdline_command(cmd)?;
+                        }
+                        Err(msg) => {
+                            Terminal::print_log(&msg)?;
+                        }
+                    }
+                }
+                self.command_bar.clear_cmdline();
+                self.mode = EditorMode::NormalMode;
+            }
+            CmdlineModeCommand::Insert(c) => {
+                self.command_bar.insert_char(c);
+            }
+            CmdlineModeCommand::Backspace => {
+                self.command_bar.handle_backspace();
+            }
+            CmdlineModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn execute_cmdline_command(&mut self, cmd: CmdlineCommands) -> Result<(), std::io::Error> {
+        match cmd {
+            CmdlineCommands::Quit => {
+                self.should_quit = true;
+            }
+            CmdlineCommands::Write => {
+                self.window.save_buffer()?;
+            }
+            CmdlineCommands::Saveas(filename) => {
+                self.window.save_buffer_with_filename(&filename)?;
+            }
+        }
+        Ok(())
+    }
     fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
         if self.should_quit {
             Terminal::clear_screen()?;
@@ -127,6 +184,7 @@ impl Editor {
         } else {
             self.window.render()?;
             self.status_bar.render()?;
+            self.command_bar.render()?;
             let pos = self.window.get_relative_position();
             Terminal::move_cursor_to(pos)?;
         }

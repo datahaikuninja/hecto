@@ -3,7 +3,7 @@ use std::io::Write;
 use super::window::TextLocation;
 
 mod line;
-use line::Line;
+pub use line::Line;
 
 pub mod grapheme;
 
@@ -25,12 +25,17 @@ impl Buffer {
         self.filename = Some(String::from(filename));
     }
     pub fn save(&mut self) -> Result<(), std::io::Error> {
-        if let Some(filename) = &self.filename {
-            let mut file = std::fs::File::create(filename)?;
-            for line in &self.lines {
-                writeln!(file, "{line}")?;
-            }
+        if let Some(filename) = &self.filename.clone() {
+            self.save_as_filename(filename)?;
         }
+        Ok(())
+    }
+    pub fn save_as_filename(&mut self, filename: &str) -> Result<(), std::io::Error> {
+        let mut file = std::fs::File::create(filename)?;
+        for line in &self.lines {
+            writeln!(file, "{line}")?;
+        }
+        self.filename = Some(filename.to_string());
         self.modified = false;
         Ok(())
     }
