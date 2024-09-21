@@ -70,6 +70,9 @@ impl Buffer {
         self.modified = true;
     }
     pub fn insert_newline(&mut self, loc: TextLocation) {
+        if self.lines.is_empty() {
+            self.lines.push(Line::default());
+        }
         let remainder = self.lines[loc.line_idx].split_off(loc.grapheme_idx);
         self.lines.insert(loc.line_idx + 1, remainder);
         self.modified = true;
