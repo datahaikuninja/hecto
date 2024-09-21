@@ -42,6 +42,7 @@ impl CommandBar {
         self.prompt = String::from(":");
     }
     pub fn clear_cmdline(&mut self) {
+        self.prompt = String::new();
         self.cmdline = Line::from_str("");
     }
     pub fn get_current_cmdline(&self) -> Vec<String> {
