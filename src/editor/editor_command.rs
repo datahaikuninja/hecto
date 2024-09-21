@@ -20,11 +20,16 @@ pub enum Direction {
     Down,
 }
 
+pub enum CmdlineSubmode {
+    Cmdline,
+    Search,
+}
+
 pub enum NormalModeCommand {
     CursorMove(Direction),
     EnterInsertMode,
     EnterInsertModeAppend,
-    EnterCmdlineMode,
+    EnterCmdlineMode(CmdlineSubmode),
     Nop,
 }
 
@@ -44,7 +49,8 @@ impl NormalModeCommand {
                 KeyCode::Char('l') => Self::CursorMove(Direction::Right),
                 KeyCode::Char('i') => Self::EnterInsertMode,
                 KeyCode::Char('a') => Self::EnterInsertModeAppend,
-                KeyCode::Char(':') => Self::EnterCmdlineMode,
+                KeyCode::Char(':') => Self::EnterCmdlineMode(CmdlineSubmode::Cmdline),
+                KeyCode::Char('/') => Self::EnterCmdlineMode(CmdlineSubmode::Search),
                 _ => Self::Nop,
             };
             command

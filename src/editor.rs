@@ -102,10 +102,10 @@ impl Editor {
                 self.window.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
             }
-            NormalModeCommand::EnterCmdlineMode => {
+            NormalModeCommand::EnterCmdlineMode(submode) => {
                 self.mode = EditorMode::CmdlineMode;
                 self.command_bar.clear_cmdline();
-                self.command_bar.set_cmdline_prompt();
+                self.command_bar.set_cmdline_prompt(submode);
             }
             NormalModeCommand::Nop => (),
         }
