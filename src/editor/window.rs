@@ -92,6 +92,19 @@ impl Window {
         self.buffer.save_as_filename(filename)?;
         Ok(())
     }
+    pub fn search(&mut self, pattern: &str) -> Result<(), std::io::Error> {
+        if pattern.is_empty() {
+            return Ok(());
+        }
+        if let Some(loc) = self.buffer.search(pattern) {
+            self.cursor_location = loc;
+            self.update_scroll_offset()?;
+            Ok(())
+        } else {
+            Terminal::print_log(&format!("Pattern not found: {}", pattern))?;
+            Ok(())
+        }
+    }
     pub fn handle_move(
         &mut self,
         direction: Direction,

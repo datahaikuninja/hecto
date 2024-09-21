@@ -50,6 +50,9 @@ impl CommandBar {
         self.prompt = String::new();
         self.cmdline = Line::from_str("");
     }
+    pub fn get_raw_cmdline(&self) -> String {
+        self.cmdline.to_string()
+    }
     pub fn get_current_cmdline(&self) -> Vec<String> {
         self.cmdline
             .to_string()

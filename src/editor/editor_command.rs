@@ -1,10 +1,16 @@
 use crossterm::event::Event::{self, Key};
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+#[derive(Clone, Copy)]
+pub enum CmdlineSubmode {
+    Cmdline,
+    Search,
+}
+
 pub enum EditorMode {
     NormalMode,
     InsertMode,
-    CmdlineMode,
+    CmdlineMode(CmdlineSubmode),
 }
 
 impl Default for EditorMode {
@@ -18,11 +24,6 @@ pub enum Direction {
     Right,
     Up,
     Down,
-}
-
-pub enum CmdlineSubmode {
-    Cmdline,
-    Search,
 }
 
 pub enum NormalModeCommand {

@@ -84,6 +84,19 @@ impl Line {
         self.rebuild_fragments();
         Self::from_str(&remainder)
     }
+    fn to_grapheme_idx(&self, str_idx: usize) -> usize {
+        for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
+            if *cur_str_idx >= str_idx {
+                return grapheme_idx;
+            }
+        }
+        panic!("Error: str index is out of bound");
+    }
+    pub fn search(&self, pattern: &str) -> Option<usize> {
+        self.raw_string
+            .find(pattern)
+            .map(|str_idx| self.to_grapheme_idx(str_idx))
+    }
 }
 
 impl std::fmt::Display for Line {

@@ -2,7 +2,7 @@ use crossterm::event::{read, Event};
 
 mod editor_command;
 use editor_command::{
-    CmdlineModeCommand, Direction, EditorMode, InsertModeCommand, NormalModeCommand,
+    CmdlineModeCommand, CmdlineSubmode, Direction, EditorMode, InsertModeCommand, NormalModeCommand,
 };
 
 mod terminal;
@@ -85,7 +85,7 @@ impl Editor {
         match self.mode {
             EditorMode::NormalMode => self.evaluate_evnet_in_normal_mode(event)?,
             EditorMode::InsertMode => self.evaluate_evnet_in_insert_mode(event)?,
-            EditorMode::CmdlineMode => self.evalueate_event_in_cmdline_mode(event)?,
+            EditorMode::CmdlineMode(_) => self.evalueate_event_in_cmdline_mode(event)?,
         }
         Ok(())
     }
@@ -103,7 +103,7 @@ impl Editor {
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::EnterCmdlineMode(submode) => {
-                self.mode = EditorMode::CmdlineMode;
+                self.mode = EditorMode::CmdlineMode(submode);
                 self.command_bar.clear_cmdline();
                 self.command_bar.set_cmdline_prompt(submode);
             }
@@ -139,17 +139,16 @@ impl Editor {
                 self.command_bar.clear_cmdline();
             }
             CmdlineModeCommand::Execute => {
-                let raw_cmdline = self.command_bar.get_current_cmdline();
-                if raw_cmdline.len() >= 1 {
-                    let cmd = CmdlineCommands::parse_cmdline(&raw_cmdline);
-                    match cmd {
-                        Ok(cmd) => {
-                            self.execute_cmdline_command(cmd)?;
-                            self.command_bar.clear_cmdline();
-                        }
-                        Err(msg) => {
-                            self.command_bar.set_error_message(&msg);
-                        }
+                // if let EditorMode::CmdlineMode(submode) = self.mode {}
+                match self.mode {
+                    EditorMode::CmdlineMode(CmdlineSubmode::Cmdline) => {
+                        self.parse_and_execute_cmdline_command()?;
+                    }
+                    EditorMode::CmdlineMode(CmdlineSubmode::Search) => {
+                        self.execute_search()?;
+                    }
+                    _ => {
+                        panic!("You should be in cmdline mode here.")
                     }
                 }
                 self.mode = EditorMode::NormalMode;
@@ -161,6 +160,22 @@ impl Editor {
                 self.command_bar.handle_backspace();
             }
             CmdlineModeCommand::Nop => (),
+        }
+        Ok(())
+    }
+    fn parse_and_execute_cmdline_command(&mut self) -> Result<(), std::io::Error> {
+        let raw_cmdline = self.command_bar.get_current_cmdline();
+        if raw_cmdline.len() >= 1 {
+            let cmd = CmdlineCommands::parse_cmdline(&raw_cmdline);
+            match cmd {
+                Ok(cmd) => {
+                    self.execute_cmdline_command(cmd)?;
+                    self.command_bar.clear_cmdline();
+                }
+                Err(msg) => {
+                    self.command_bar.set_error_message(&msg);
+                }
+            }
         }
         Ok(())
     }
@@ -176,6 +191,12 @@ impl Editor {
                 self.window.save_buffer_with_filename(&filename)?;
             }
         }
+        Ok(())
+    }
+    fn execute_search(&mut self) -> Result<(), std::io::Error> {
+        let pattern = self.command_bar.get_raw_cmdline();
+        self.window.search(&pattern)?;
+        self.command_bar.clear_cmdline();
         Ok(())
     }
     fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
