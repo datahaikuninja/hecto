@@ -57,13 +57,16 @@ impl std::fmt::Display for Grapheme {
     }
 }
 
-pub fn str_to_graphemes(s: &str) -> Vec<Grapheme> {
-    let graphemes = s
-        .graphemes(true)
-        .map(|s| Grapheme {
-            string: String::from(s),
-            width: GraphemeWidth::from_usize(s.width_cjk()),
+pub fn str_to_graphemes(s: &str) -> (Vec<Grapheme>, Vec<usize>) {
+    s.grapheme_indices(true)
+        .map(|(grapheme_idx, s)| {
+            (
+                Grapheme {
+                    string: String::from(s),
+                    width: GraphemeWidth::from_usize(s.width_cjk()),
+                },
+                grapheme_idx,
+            )
         })
-        .collect::<Vec<_>>();
-    graphemes
+        .unzip()
 }
