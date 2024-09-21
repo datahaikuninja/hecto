@@ -79,7 +79,12 @@ impl Line {
         self.rebuild_fragments();
     }
     pub fn split_off(&mut self, at: usize) -> Self {
-        let str_idx = self.to_str_idx[at];
+        assert!(at <= self.graphemes.len());
+        let str_idx = self
+            .to_str_idx
+            .get(at)
+            .cloned()
+            .unwrap_or(self.raw_string.len()); // just past the end
         let remainder = self.raw_string.split_off(str_idx);
         self.rebuild_fragments();
         Self::from_str(&remainder)
