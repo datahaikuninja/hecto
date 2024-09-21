@@ -3,7 +3,7 @@ use super::terminal::Position;
 use super::Terminal;
 
 pub struct CommandBar {
-    prompt: char,
+    prompt: String,
     cmdline: Line,
     needs_redraw: bool,
     pos_y: usize,
@@ -12,7 +12,7 @@ pub struct CommandBar {
 impl CommandBar {
     pub fn new(pos_y: usize) -> Self {
         Self {
-            prompt: ':',
+            prompt: String::new(),
             cmdline: Line::from_str(""),
             needs_redraw: true,
             pos_y,
@@ -38,6 +38,9 @@ impl CommandBar {
             self.cmdline.delete_grapheme(self.cmdline.len() - 1);
         }
     }
+    pub fn set_cmdline_prompt(&mut self) {
+        self.prompt = String::from(":");
+    }
     pub fn clear_cmdline(&mut self) {
         self.cmdline = Line::from_str("");
     }
@@ -47,5 +50,9 @@ impl CommandBar {
             .split_whitespace()
             .map(String::from)
             .collect()
+    }
+    pub fn set_error_message(&mut self, msg: &str) {
+        self.prompt = String::new();
+        self.cmdline = Line::from_str(msg);
     }
 }

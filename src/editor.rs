@@ -105,6 +105,7 @@ impl Editor {
             NormalModeCommand::EnterCmdlineMode => {
                 self.mode = EditorMode::CmdlineMode;
                 self.command_bar.clear_cmdline();
+                self.command_bar.set_cmdline_prompt();
             }
             NormalModeCommand::Nop => (),
         }
@@ -144,13 +145,13 @@ impl Editor {
                     match cmd {
                         Ok(cmd) => {
                             self.execute_cmdline_command(cmd)?;
+                            self.command_bar.clear_cmdline();
                         }
                         Err(msg) => {
-                            Terminal::print_log(&msg)?;
+                            self.command_bar.set_error_message(&msg);
                         }
                     }
                 }
-                self.command_bar.clear_cmdline();
                 self.mode = EditorMode::NormalMode;
             }
             CmdlineModeCommand::Insert(c) => {
