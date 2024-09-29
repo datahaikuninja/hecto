@@ -5,20 +5,18 @@ use super::Terminal;
 pub struct StatusBar {
     current_status: DocumentStatus,
     needs_redraw: bool,
-    margin_bottom: usize,
     width: usize,
     position_y: usize,
 }
 
 impl StatusBar {
-    pub fn new(margin_bottom: usize) -> Self {
+    pub fn new(position_y: usize) -> Self {
         let size = Terminal::size().expect("Failed to get terminal size");
         StatusBar {
             current_status: DocumentStatus::default(),
             needs_redraw: true,
-            margin_bottom,
             width: size.width,
-            position_y: size.height - margin_bottom - 1,
+            position_y,
         }
     }
     pub fn update_status(&mut self, new_stat: DocumentStatus) {
