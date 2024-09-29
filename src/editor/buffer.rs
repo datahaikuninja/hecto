@@ -48,10 +48,13 @@ impl Buffer {
     pub fn get_filename(&self) -> Option<String> {
         self.filename.clone()
     }
-    pub fn insert_char(&mut self, c: char, loc: TextLocation) {
+    fn init_if_empty(&mut self) {
         if self.is_empty() {
             self.lines.push(Line::default());
         }
+    }
+    pub fn insert_char(&mut self, c: char, loc: TextLocation) {
+        self.init_if_empty();
         if loc.line_idx >= self.lines.len() {
             // TODO: insert new line at the end of buffer
             return;
@@ -70,21 +73,15 @@ impl Buffer {
         self.modified = true;
     }
     pub fn prepend_newline(&mut self, loc: TextLocation) {
-        if self.is_empty() {
-            self.lines.push(Line::default());
-        }
+        self.init_if_empty();
         self.lines.insert(loc.line_idx, Line::default());
     }
     pub fn append_newline(&mut self, loc: TextLocation) {
-        if self.is_empty() {
-            self.lines.push(Line::default());
-        }
+        self.init_if_empty();
         self.lines.insert(loc.line_idx + 1, Line::default());
     }
     pub fn insert_newline(&mut self, loc: TextLocation) {
-        if self.lines.is_empty() {
-            self.lines.push(Line::default());
-        }
+        self.init_if_empty();
         let remainder = self.lines[loc.line_idx].split_off(loc.grapheme_idx);
         self.lines.insert(loc.line_idx + 1, remainder);
         self.modified = true;
