@@ -36,6 +36,7 @@ pub struct Editor {
     window: Window,
     status_bar: StatusBar,
     command_bar: CommandBar,
+    last_search_pattern: String,
 }
 
 impl Editor {
@@ -55,6 +56,7 @@ impl Editor {
             window: view,
             status_bar: StatusBar::new(message_bar_height),
             command_bar: CommandBar::new(height - 1),
+            last_search_pattern: String::new(),
         }
     }
     pub fn load_file(&mut self, filename: &str) {
@@ -106,6 +108,9 @@ impl Editor {
                 self.mode = EditorMode::CmdlineMode(submode);
                 self.command_bar.clear_cmdline();
                 self.command_bar.set_cmdline_prompt(submode);
+            }
+            NormalModeCommand::SearchNext => {
+                self.window.search(&self.last_search_pattern)?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -196,6 +201,7 @@ impl Editor {
     fn execute_search(&mut self) -> Result<(), std::io::Error> {
         let pattern = self.command_bar.get_raw_cmdline();
         self.window.search(&pattern)?;
+        self.last_search_pattern = pattern;
         self.command_bar.clear_cmdline();
         Ok(())
     }
