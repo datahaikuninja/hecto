@@ -1,4 +1,5 @@
 use super::buffer::Line;
+use super::editor_command::CmdlineSubmode;
 use super::terminal::Position;
 use super::Terminal;
 
@@ -38,12 +39,19 @@ impl CommandBar {
             self.cmdline.delete_grapheme(self.cmdline.len() - 1);
         }
     }
-    pub fn set_cmdline_prompt(&mut self) {
-        self.prompt = String::from(":");
+    pub fn set_cmdline_prompt(&mut self, submode: CmdlineSubmode) {
+        let prompt_str = match submode {
+            CmdlineSubmode::Cmdline => ":",
+            CmdlineSubmode::Search => "/",
+        };
+        self.prompt = String::from(prompt_str);
     }
     pub fn clear_cmdline(&mut self) {
         self.prompt = String::new();
         self.cmdline = Line::from_str("");
+    }
+    pub fn get_raw_cmdline(&self) -> String {
+        self.cmdline.to_string()
     }
     pub fn get_current_cmdline(&self) -> Vec<String> {
         self.cmdline

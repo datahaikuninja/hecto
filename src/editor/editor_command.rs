@@ -1,10 +1,16 @@
 use crossterm::event::Event::{self, Key};
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+#[derive(Clone, Copy)]
+pub enum CmdlineSubmode {
+    Cmdline,
+    Search,
+}
+
 pub enum EditorMode {
     NormalMode,
     InsertMode,
-    CmdlineMode,
+    CmdlineMode(CmdlineSubmode),
 }
 
 impl Default for EditorMode {
@@ -24,7 +30,9 @@ pub enum NormalModeCommand {
     CursorMove(Direction),
     EnterInsertMode,
     EnterInsertModeAppend,
-    EnterCmdlineMode,
+    EnterCmdlineMode(CmdlineSubmode),
+    SearchNext,
+    SearchPrev,
     Nop,
 }
 
@@ -44,7 +52,10 @@ impl NormalModeCommand {
                 KeyCode::Char('l') => Self::CursorMove(Direction::Right),
                 KeyCode::Char('i') => Self::EnterInsertMode,
                 KeyCode::Char('a') => Self::EnterInsertModeAppend,
-                KeyCode::Char(':') => Self::EnterCmdlineMode,
+                KeyCode::Char(':') => Self::EnterCmdlineMode(CmdlineSubmode::Cmdline),
+                KeyCode::Char('/') => Self::EnterCmdlineMode(CmdlineSubmode::Search),
+                KeyCode::Char('n') => Self::SearchNext,
+                KeyCode::Char('N') => Self::SearchPrev,
                 _ => Self::Nop,
             };
             command

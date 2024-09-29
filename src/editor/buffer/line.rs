@@ -3,12 +3,23 @@ use super::grapheme::{str_to_graphemes, Grapheme};
 #[derive(Default)]
 pub struct Line {
     graphemes: Vec<Grapheme>,
+    raw_string: String,
+    to_str_idx: Vec<usize>, // grapheme index to corresponding string index
 }
 
 impl Line {
+    fn rebuild_fragments(&mut self) {
+        let (graphemes, to_str_idx) = str_to_graphemes(&self.raw_string);
+        self.graphemes = graphemes;
+        self.to_str_idx = to_str_idx;
+    }
     pub fn from_str(s: &str) -> Self {
-        let graphemes = str_to_graphemes(s);
-        Self { graphemes }
+        let (graphemes, to_str_idx) = str_to_graphemes(s);
+        Self {
+            graphemes,
+            raw_string: String::from(s),
+            to_str_idx,
+        }
     }
     pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
         self.graphemes.get(index).cloned()
@@ -47,49 +58,61 @@ impl Line {
     pub fn len(&self) -> usize {
         self.graphemes.len()
     }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     pub fn insert_char(&mut self, c: char, idx: usize) {
-        let mut result = String::new();
-        for (i, grapheme) in self.graphemes.iter().enumerate() {
-            if i == idx {
-                result.push(c);
-            }
-            result.push_str(&grapheme.to_string());
+        if let Some(str_idx) = self.to_str_idx.get(idx) {
+            self.raw_string.insert(*str_idx, c);
+        } else {
+            self.raw_string.push(c);
         }
-        if idx >= self.len() {
-            result.push(c);
-        }
-        self.graphemes = str_to_graphemes(&result);
+        self.rebuild_fragments();
     }
     pub fn delete_grapheme(&mut self, idx: usize) {
-        let mut result = String::new();
-
-        for (i, grapheme) in self.graphemes.iter().enumerate() {
-            if i != idx {
-                result.push_str(&grapheme.to_string());
-            }
+        if let Some(grapheme) = self.graphemes.get(idx) {
+            let start = self.to_str_idx[idx];
+            let end = start + grapheme.to_string().len();
+            self.raw_string.drain(start..end);
+            self.rebuild_fragments();
         }
-        self.graphemes = str_to_graphemes(&result);
     }
     pub fn push_line(&mut self, other: &Self) {
-        let mut result = self.to_string();
-        result.push_str(&other.to_string());
-        self.graphemes = str_to_graphemes(&result);
+        self.raw_string.push_str(&other.raw_string);
+        self.rebuild_fragments();
     }
     pub fn split_off(&mut self, at: usize) -> Self {
-        let remainder = self.graphemes.split_off(at);
-        Self {
-            graphemes: remainder,
+        assert!(at <= self.graphemes.len());
+        let str_idx = self
+            .to_str_idx
+            .get(at)
+            .cloned()
+            .unwrap_or(self.raw_string.len()); // just past the end
+        let remainder = self.raw_string.split_off(str_idx);
+        self.rebuild_fragments();
+        Self::from_str(&remainder)
+    }
+    fn to_grapheme_idx(&self, str_idx: usize) -> usize {
+        for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
+            if *cur_str_idx >= str_idx {
+                return grapheme_idx;
+            }
         }
+        panic!("Error: str index is out of bound");
+    }
+    pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
+        if self.is_empty() {
+            return None;
+        }
+        let byte_index = self.to_str_idx[start_idx];
+        self.raw_string[byte_index..]
+            .find(pattern)
+            .map(|str_idx| byte_index + self.to_grapheme_idx(str_idx))
     }
 }
 
 impl std::fmt::Display for Line {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let result: String = self
-            .graphemes
-            .iter()
-            .map(|g| g.to_string().clone())
-            .collect();
-        write!(formatter, "{result}")
+        write!(formatter, "{}", self.raw_string)
     }
 }

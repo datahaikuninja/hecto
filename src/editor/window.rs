@@ -1,6 +1,7 @@
 use super::terminal::{Position, Size, Terminal};
 
 use super::editor_command::Direction;
+use super::SearchDirection;
 
 use super::buffer::grapheme::Grapheme;
 use super::buffer::Buffer;
@@ -91,6 +92,48 @@ impl Window {
     pub fn save_buffer_with_filename(&mut self, filename: &str) -> Result<(), std::io::Error> {
         self.buffer.save_as_filename(filename)?;
         Ok(())
+    }
+    pub fn search(
+        &mut self,
+        pattern: &str,
+        direction: SearchDirection,
+    ) -> Result<(), std::io::Error> {
+        if pattern.is_empty() {
+            return Ok(());
+        }
+        let result_list = self.buffer.search(pattern);
+        if !result_list.is_empty() {
+            match direction {
+                SearchDirection::Forward => {
+                    for loc in result_list {
+                        if self.cursor_location.line_idx < loc.line_idx
+                            || (self.cursor_location.line_idx == loc.line_idx
+                                && self.cursor_location.grapheme_idx < loc.grapheme_idx)
+                        {
+                            self.cursor_location = loc;
+                            self.update_scroll_offset()?;
+                            break;
+                        }
+                    }
+                }
+                SearchDirection::Backward => {
+                    for loc in result_list.iter().rev() {
+                        if loc.line_idx < self.cursor_location.line_idx
+                            || (loc.line_idx == self.cursor_location.line_idx
+                                && loc.grapheme_idx < self.cursor_location.grapheme_idx)
+                        {
+                            self.cursor_location = *loc;
+                            self.update_scroll_offset()?;
+                            break;
+                        }
+                    }
+                }
+            }
+            Ok(())
+        } else {
+            Terminal::print_log(&format!("Pattern not found: {}", pattern))?;
+            Ok(())
+        }
     }
     pub fn handle_move(
         &mut self,
