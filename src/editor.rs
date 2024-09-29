@@ -109,6 +109,14 @@ impl Editor {
                 self.window.handle_move(Direction::Right, true)?;
                 self.mode = EditorMode::InsertMode;
             }
+            NormalModeCommand::EnterInsertModeBeginNewLineAbove => {
+                self.window.prepend_newline()?;
+                self.mode = EditorMode::InsertMode;
+            }
+            NormalModeCommand::EnterInsertModeBeginNewLineBelow => {
+                self.window.append_newline()?;
+                self.mode = EditorMode::InsertMode;
+            }
             NormalModeCommand::EnterCmdlineMode(submode) => {
                 self.mode = EditorMode::CmdlineMode(submode);
                 self.command_bar.clear_cmdline();

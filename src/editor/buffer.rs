@@ -69,6 +69,18 @@ impl Buffer {
         current_line.push_line(&next_line);
         self.modified = true;
     }
+    pub fn prepend_newline(&mut self, loc: TextLocation) {
+        if self.is_empty() {
+            self.lines.push(Line::default());
+        }
+        self.lines.insert(loc.line_idx, Line::default());
+    }
+    pub fn append_newline(&mut self, loc: TextLocation) {
+        if self.is_empty() {
+            self.lines.push(Line::default());
+        }
+        self.lines.insert(loc.line_idx + 1, Line::default());
+    }
     pub fn insert_newline(&mut self, loc: TextLocation) {
         if self.lines.is_empty() {
             self.lines.push(Line::default());
