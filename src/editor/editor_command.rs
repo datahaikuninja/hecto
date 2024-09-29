@@ -32,6 +32,7 @@ pub enum NormalModeCommand {
     EnterInsertModeAppend,
     EnterCmdlineMode(CmdlineSubmode),
     SearchNext,
+    SearchPrev,
     Nop,
 }
 
@@ -54,6 +55,7 @@ impl NormalModeCommand {
                 KeyCode::Char(':') => Self::EnterCmdlineMode(CmdlineSubmode::Cmdline),
                 KeyCode::Char('/') => Self::EnterCmdlineMode(CmdlineSubmode::Search),
                 KeyCode::Char('n') => Self::SearchNext,
+                KeyCode::Char('N') => Self::SearchPrev,
                 _ => Self::Nop,
             };
             command

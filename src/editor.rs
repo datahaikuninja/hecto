@@ -30,6 +30,11 @@ pub struct DocumentStatus {
     file_name: Option<String>,
 }
 
+pub enum SearchDirection {
+    Forward,
+    Backward,
+}
+
 pub struct Editor {
     should_quit: bool,
     mode: EditorMode,
@@ -110,7 +115,12 @@ impl Editor {
                 self.command_bar.set_cmdline_prompt(submode);
             }
             NormalModeCommand::SearchNext => {
-                self.window.search(&self.last_search_pattern)?;
+                self.window
+                    .search(&self.last_search_pattern, SearchDirection::Forward)?;
+            }
+            NormalModeCommand::SearchPrev => {
+                self.window
+                    .search(&self.last_search_pattern, SearchDirection::Backward)?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -150,7 +160,7 @@ impl Editor {
                         self.parse_and_execute_cmdline_command()?;
                     }
                     EditorMode::CmdlineMode(CmdlineSubmode::Search) => {
-                        self.execute_search()?;
+                        self.execute_search(SearchDirection::Forward)?;
                     }
                     _ => {
                         panic!("You should be in cmdline mode here.")
@@ -198,9 +208,9 @@ impl Editor {
         }
         Ok(())
     }
-    fn execute_search(&mut self) -> Result<(), std::io::Error> {
+    fn execute_search(&mut self, direction: SearchDirection) -> Result<(), std::io::Error> {
         let pattern = self.command_bar.get_raw_cmdline();
-        self.window.search(&pattern)?;
+        self.window.search(&pattern, direction)?;
         self.last_search_pattern = pattern;
         self.command_bar.clear_cmdline();
         Ok(())
