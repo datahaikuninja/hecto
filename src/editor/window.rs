@@ -96,9 +96,18 @@ impl Window {
         if pattern.is_empty() {
             return Ok(());
         }
-        if let Some(loc) = self.buffer.search(pattern) {
-            self.cursor_location = loc;
-            self.update_scroll_offset()?;
+        let result_list = self.buffer.search(pattern);
+        if !result_list.is_empty() {
+            for loc in result_list {
+                if self.cursor_location.line_idx < loc.line_idx
+                    || (self.cursor_location.line_idx == loc.line_idx
+                        && self.cursor_location.grapheme_idx < loc.grapheme_idx)
+                {
+                    self.cursor_location = loc;
+                    self.update_scroll_offset()?;
+                    break;
+                }
+            }
             Ok(())
         } else {
             Terminal::print_log(&format!("Pattern not found: {}", pattern))?;

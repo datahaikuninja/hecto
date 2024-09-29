@@ -58,6 +58,9 @@ impl Line {
     pub fn len(&self) -> usize {
         self.graphemes.len()
     }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     pub fn insert_char(&mut self, c: char, idx: usize) {
         if let Some(str_idx) = self.to_str_idx.get(idx) {
             self.raw_string.insert(*str_idx, c);
@@ -97,10 +100,14 @@ impl Line {
         }
         panic!("Error: str index is out of bound");
     }
-    pub fn search(&self, pattern: &str) -> Option<usize> {
-        self.raw_string
+    pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
+        if self.is_empty() {
+            return None;
+        }
+        let byte_index = self.to_str_idx[start_idx];
+        self.raw_string[byte_index..]
             .find(pattern)
-            .map(|str_idx| self.to_grapheme_idx(str_idx))
+            .map(|str_idx| byte_index + self.to_grapheme_idx(str_idx))
     }
 }
 
