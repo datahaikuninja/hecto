@@ -229,11 +229,25 @@ impl Window {
         }
         Ok(())
     }
+    pub fn begin_newline_above(&mut self) -> Result<(), std::io::Error> {
+        self.buffer.begin_newline_above(self.cursor_location);
+        self.jump_to_line_start(self.cursor_location.line_idx)?;
+        Ok(())
+    }
+    pub fn begin_newline_below(&mut self) -> Result<(), std::io::Error> {
+        self.buffer.begin_newline_below(self.cursor_location);
+        self.jump_to_line_start(self.cursor_location.line_idx + 1)?;
+        Ok(())
+    }
     pub fn insert_newline(&mut self) -> Result<(), std::io::Error> {
         self.buffer.insert_newline(self.cursor_location);
+        self.jump_to_line_start(self.cursor_location.line_idx + 1)?;
+        Ok(())
+    }
+    fn jump_to_line_start(&mut self, line_idx: usize) -> Result<(), std::io::Error> {
         self.cursor_location = TextLocation {
             grapheme_idx: 0,
-            line_idx: self.cursor_location.line_idx + 1,
+            line_idx,
         };
         self.update_scroll_offset()?;
         self.needs_redraw = true;
