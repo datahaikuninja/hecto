@@ -75,10 +75,12 @@ impl Buffer {
     pub fn begin_newline_above(&mut self, loc: TextLocation) {
         self.init_if_empty();
         self.lines.insert(loc.line_idx, Line::default());
+        self.modified = true;
     }
     pub fn begin_newline_below(&mut self, loc: TextLocation) {
         self.init_if_empty();
         self.lines.insert(loc.line_idx + 1, Line::default());
+        self.modified = true;
     }
     pub fn insert_newline(&mut self, loc: TextLocation) {
         self.init_if_empty();
