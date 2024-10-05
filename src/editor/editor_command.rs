@@ -45,18 +45,22 @@ impl NormalModeCommand {
             ..
         }) = event
         {
-            let command = match code {
-                KeyCode::Char('h') => Self::CursorMove(Direction::Left),
-                KeyCode::Char('j') => Self::CursorMove(Direction::Down),
-                KeyCode::Char('k') => Self::CursorMove(Direction::Up),
-                KeyCode::Char('l') => Self::CursorMove(Direction::Right),
-                KeyCode::Char('i') => Self::EnterInsertMode,
-                KeyCode::Char('a') => Self::EnterInsertModeAppend,
-                KeyCode::Char(':') => Self::EnterCmdlineMode(CmdlineSubmode::Cmdline),
-                KeyCode::Char('/') => Self::EnterCmdlineMode(CmdlineSubmode::Search),
-                KeyCode::Char('n') => Self::SearchNext,
-                KeyCode::Char('N') => Self::SearchPrev,
-                _ => Self::Nop,
+            let command = if *modifiers == KeyModifiers::NONE {
+                match code {
+                    KeyCode::Char('h') => Self::CursorMove(Direction::Left),
+                    KeyCode::Char('j') => Self::CursorMove(Direction::Down),
+                    KeyCode::Char('k') => Self::CursorMove(Direction::Up),
+                    KeyCode::Char('l') => Self::CursorMove(Direction::Right),
+                    KeyCode::Char('i') => Self::EnterInsertMode,
+                    KeyCode::Char('a') => Self::EnterInsertModeAppend,
+                    KeyCode::Char(':') => Self::EnterCmdlineMode(CmdlineSubmode::Cmdline),
+                    KeyCode::Char('/') => Self::EnterCmdlineMode(CmdlineSubmode::Search),
+                    KeyCode::Char('n') => Self::SearchNext,
+                    KeyCode::Char('N') => Self::SearchPrev,
+                    _ => Self::Nop,
+                }
+            } else {
+                Self::Nop
             };
             command
         } else {
@@ -82,13 +86,17 @@ impl InsertModeCommand {
             ..
         }) = event
         {
-            let command = match code {
-                KeyCode::Char(c) if *modifiers == KeyModifiers::NONE => Self::Insert(*c),
-                KeyCode::Tab if *modifiers == KeyModifiers::NONE => Self::Insert('\t'),
-                KeyCode::Backspace if *modifiers == KeyModifiers::NONE => Self::Backspace,
-                KeyCode::Enter if *modifiers == KeyModifiers::NONE => Self::InsertNewLine,
-                KeyCode::Esc => Self::LeaveInsertMode,
-                _ => Self::Nop,
+            let command = if *modifiers == KeyModifiers::NONE {
+                match code {
+                    KeyCode::Char(c) => Self::Insert(*c),
+                    KeyCode::Tab => Self::Insert('\t'),
+                    KeyCode::Backspace => Self::Backspace,
+                    KeyCode::Enter => Self::InsertNewLine,
+                    KeyCode::Esc => Self::LeaveInsertMode,
+                    _ => Self::Nop,
+                }
+            } else {
+                Self::Nop
             };
             command
         } else {
