@@ -51,16 +51,16 @@ impl Editor {
             let _ = Terminal::terminate(); // explicitly ignore errors in terminate()
             current_hook(panic_info);
         }));
+        let Size { height, .. } = Terminal::size().expect("Coud not get terminal size!");
         let status_bar_height = 1;
         let message_bar_height = 1;
         let view = Window::new(status_bar_height + message_bar_height);
-        let Size { height, .. } = Terminal::size().expect("Coud not get terminal size!");
         Self {
             should_quit: false,
             mode: EditorMode::NormalMode,
             window: view,
-            status_bar: StatusBar::new(message_bar_height),
-            command_bar: CommandBar::new(height - 1),
+            status_bar: StatusBar::new(height - status_bar_height - message_bar_height),
+            command_bar: CommandBar::new(height - message_bar_height),
             last_search_pattern: String::new(),
         }
     }
