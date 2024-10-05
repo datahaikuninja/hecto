@@ -110,11 +110,11 @@ impl Editor {
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::EnterInsertModeBeginNewLineAbove => {
-                self.window.prepend_newline()?;
+                self.window.begin_newline_above()?;
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::EnterInsertModeBeginNewLineBelow => {
-                self.window.append_newline()?;
+                self.window.begin_newline_below()?;
                 self.mode = EditorMode::InsertMode;
             }
             NormalModeCommand::EnterCmdlineMode(submode) => {

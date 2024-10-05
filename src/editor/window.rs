@@ -229,13 +229,13 @@ impl Window {
         }
         Ok(())
     }
-    pub fn prepend_newline(&mut self) -> Result<(), std::io::Error> {
-        self.buffer.prepend_newline(self.cursor_location);
+    pub fn begin_newline_above(&mut self) -> Result<(), std::io::Error> {
+        self.buffer.begin_newline_above(self.cursor_location);
         self.jump_to_line_start(self.cursor_location.line_idx)?;
         Ok(())
     }
-    pub fn append_newline(&mut self) -> Result<(), std::io::Error> {
-        self.buffer.append_newline(self.cursor_location);
+    pub fn begin_newline_below(&mut self) -> Result<(), std::io::Error> {
+        self.buffer.begin_newline_below(self.cursor_location);
         self.jump_to_line_start(self.cursor_location.line_idx + 1)?;
         Ok(())
     }

@@ -72,11 +72,11 @@ impl Buffer {
         current_line.push_line(&next_line);
         self.modified = true;
     }
-    pub fn prepend_newline(&mut self, loc: TextLocation) {
+    pub fn begin_newline_above(&mut self, loc: TextLocation) {
         self.init_if_empty();
         self.lines.insert(loc.line_idx, Line::default());
     }
-    pub fn append_newline(&mut self, loc: TextLocation) {
+    pub fn begin_newline_below(&mut self, loc: TextLocation) {
         self.init_if_empty();
         self.lines.insert(loc.line_idx + 1, Line::default());
     }
