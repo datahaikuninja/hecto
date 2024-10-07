@@ -47,7 +47,7 @@ impl NormalModeCommand {
             ..
         }) = event
         {
-            let command = if *modifiers == KeyModifiers::NONE {
+            let command = if *modifiers == KeyModifiers::NONE || *modifiers == KeyModifiers::SHIFT {
                 match code {
                     KeyCode::Char('h') => Self::CursorMove(Direction::Left),
                     KeyCode::Char('j') => Self::CursorMove(Direction::Down),
