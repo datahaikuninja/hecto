@@ -22,6 +22,8 @@ use command_bar::CommandBar;
 mod cmdline_commands;
 use cmdline_commands::CmdlineCommands;
 
+mod annotated_string;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
@@ -30,9 +32,14 @@ pub struct DocumentStatus {
     file_name: Option<String>,
 }
 
+#[derive(Debug)]
 pub enum SearchDirection {
     Forward,
     Backward,
+}
+
+pub struct RenderContext {
+    pub search_pattern: String,
 }
 
 pub struct Editor {
@@ -228,7 +235,10 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
-            self.window.render()?;
+            let context = RenderContext {
+                search_pattern: self.last_search_pattern.clone(),
+            };
+            self.window.render(&context)?;
             self.status_bar.render()?;
             self.command_bar.render()?;
             let pos = self.window.get_relative_position();
