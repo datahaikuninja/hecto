@@ -24,30 +24,6 @@ impl Line {
     pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
         self.graphemes.get(index).cloned()
     }
-    pub fn get_visible_graphemes(&self, left: usize, right: usize) -> String {
-        let mut result = String::new();
-        let mut current_pos = 0;
-        for grapheme in &self.graphemes {
-            let next_pos = current_pos + grapheme.get_width_at_current_pos(current_pos);
-            if current_pos >= right {
-                break;
-            }
-            if next_pos > left {
-                // Replace cut-off text with '>' or '<'.
-                if next_pos > right {
-                    result.push('>');
-                } else if current_pos < left {
-                    result.push('<');
-                }
-                // add fully visible grapheme
-                else {
-                    result.push_str(&grapheme.to_string());
-                }
-            }
-            current_pos = next_pos;
-        }
-        result
-    }
     pub fn calc_width_until_grapheme_index(&self, graphme_index: usize) -> usize {
         let mut current_pos = 0;
         for grapheme in self.graphemes.iter().take(graphme_index) {
@@ -114,5 +90,64 @@ impl Line {
 impl std::fmt::Display for Line {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "{}", self.raw_string)
+    }
+}
+
+pub struct LineView<'a> {
+    line: &'a Line,
+    padding_left: String,
+    padding_right: String,
+    visible_range: (usize, usize),
+}
+
+impl<'a> LineView<'a> {
+    pub fn new(line: &'a Line, left: usize, right: usize) -> Self {
+        // make view from terminal column range [left, right) for line
+        let mut current_pos = 0;
+        let mut padding_left = String::new();
+        let mut padding_right = String::new();
+        let mut left_grapheme_idx = usize::MAX;
+        let mut right_grapheme_idx = usize::MAX;
+
+        for (i, grapheme) in line.graphemes.iter().enumerate() {
+            let next_pos = current_pos + grapheme.get_width_at_current_pos(current_pos);
+            // Current character is out of visible range
+            if next_pos <= left || current_pos >= right {
+                current_pos = next_pos;
+                continue;
+            }
+            let right_end_visible = left <= next_pos - 1 && next_pos - 1 < right;
+            let left_end_visible = left <= current_pos && current_pos < right;
+            assert!(right_end_visible || left_end_visible);
+            if !left_end_visible {
+                padding_left.push('<');
+            } else if !right_end_visible {
+                padding_right.push('>');
+            } else {
+                left_grapheme_idx = usize::min(left_grapheme_idx, i);
+                right_grapheme_idx = i + 1;
+            }
+            current_pos = next_pos;
+        }
+
+        Self {
+            line,
+            padding_left,
+            padding_right,
+            visible_range: (left_grapheme_idx, right_grapheme_idx),
+        }
+    }
+    pub fn build_rendered_str(&self) -> String {
+        let left_grapheme_idx = self.visible_range.0;
+        let grapheme_count = self.visible_range.1 - self.visible_range.0;
+        let content = self
+            .line
+            .graphemes
+            .iter()
+            .skip(left_grapheme_idx)
+            .take(grapheme_count)
+            .map(|g| g.to_string())
+            .collect::<String>();
+        format!("{}{}{}", self.padding_left, content, self.padding_right)
     }
 }

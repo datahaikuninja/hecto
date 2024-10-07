@@ -8,6 +8,8 @@ use super::buffer::Buffer;
 
 use super::DocumentStatus;
 
+use super::buffer::LineView;
+
 #[derive(Copy, Clone, Default)]
 pub struct TextLocation {
     pub grapheme_idx: usize,
@@ -73,7 +75,8 @@ impl Window {
             if let Some(line) = self.buffer.lines.get(i + top) {
                 let left = self.scroll_offset.col;
                 let right = left + width;
-                let display_line = line.get_visible_graphemes(left, right);
+                let view = LineView::new(&line, left, right);
+                let display_line = view.build_rendered_str();
                 self.render_line(i, &display_line)?;
             } else {
                 self.render_line(i, "~")?;
