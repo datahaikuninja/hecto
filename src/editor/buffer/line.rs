@@ -1,3 +1,5 @@
+use super::super::annotated_string::{AnnotatedString, Annotation};
+use super::super::RenderContext;
 use super::grapheme::{str_to_graphemes, Grapheme};
 
 #[derive(Default)]
@@ -20,6 +22,9 @@ impl Line {
             raw_string: String::from(s),
             to_str_idx,
         }
+    }
+    pub fn get_raw_str(&self) -> &str {
+        &self.raw_string
     }
     pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
         self.graphemes.get(index).cloned()
@@ -68,6 +73,12 @@ impl Line {
         self.rebuild_fragments();
         Self::from_str(&remainder)
     }
+    fn to_byte_idx(&self, grapheme_idx: usize) -> usize {
+        self.to_str_idx
+            .get(grapheme_idx)
+            .cloned()
+            .unwrap_or(self.raw_string.len())
+    }
     fn to_grapheme_idx(&self, str_idx: usize) -> usize {
         for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
             if *cur_str_idx >= str_idx {
@@ -75,6 +86,20 @@ impl Line {
             }
         }
         panic!("Error: str index is out of bound");
+    }
+    pub fn search_all_occurence(&self, pattern: &str) -> Vec<(usize, usize)> {
+        let mut result = vec![];
+        if pattern.is_empty() {
+            return result;
+        }
+        let mut start_index = 0;
+        while let Some(grapheme_idx) = self.search(pattern, start_index) {
+            let start = grapheme_idx;
+            let end = start + pattern.len();
+            result.push((start, end));
+            start_index = grapheme_idx + 1;
+        }
+        result
     }
     pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
         if self.is_empty() {
@@ -137,17 +162,19 @@ impl<'a> LineView<'a> {
             visible_range: (left_grapheme_idx, right_grapheme_idx),
         }
     }
-    pub fn build_rendered_str(&self) -> String {
-        let left_grapheme_idx = self.visible_range.0;
-        let grapheme_count = self.visible_range.1 - self.visible_range.0;
-        let content = self
-            .line
-            .graphemes
-            .iter()
-            .skip(left_grapheme_idx)
-            .take(grapheme_count)
-            .map(|g| g.to_string())
-            .collect::<String>();
-        format!("{}{}{}", self.padding_left, content, self.padding_right)
+    pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
+        let search_hits = self.line.search_all_occurence(&context.search_pattern);
+        let mut content = AnnotatedString::from_str(self.line.get_raw_str());
+        for (match_start, match_end) in search_hits {
+            content.add_annotation(Annotation::new(match_start, match_end));
+        }
+        let start = self.line.to_byte_idx(self.visible_range.0);
+        let end = self.line.to_byte_idx(self.visible_range.1);
+        let visible_content = content.substr(start, end);
+        let mut result = AnnotatedString::default();
+        result.push_annot_str(&AnnotatedString::from_str(&self.padding_left));
+        result.push_annot_str(&visible_content);
+        result.push_annot_str(&AnnotatedString::from_str(&self.padding_right));
+        result
     }
 }

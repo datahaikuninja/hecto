@@ -1,5 +1,8 @@
 use super::terminal::{Position, Size, Terminal};
 
+use super::annotated_string::AnnotatedString;
+use super::RenderContext;
+
 use super::editor_command::Direction;
 use super::SearchDirection;
 
@@ -10,7 +13,7 @@ use super::DocumentStatus;
 
 use super::buffer::LineView;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct TextLocation {
     pub grapheme_idx: usize,
     pub line_idx: usize,
@@ -63,7 +66,7 @@ impl Window {
             file_name: self.buffer.get_filename(),
         }
     }
-    pub fn render(&mut self) -> Result<(), std::io::Error> {
+    pub fn render(&mut self, context: &RenderContext) -> Result<(), std::io::Error> {
         // TODO: separate implementation of render()
         // according to whether buffer is empty or not.
         if !self.needs_redraw {
@@ -76,10 +79,10 @@ impl Window {
                 let left = self.scroll_offset.col;
                 let right = left + width;
                 let view = LineView::new(&line, left, right);
-                let display_line = view.build_rendered_str();
+                let display_line = view.build_rendered_str(context);
                 self.render_line(i, &display_line)?;
             } else {
-                self.render_line(i, "~")?;
+                self.render_line(i, &AnnotatedString::from_str("~"))?;
             }
         }
         if self.buffer.is_empty() {
@@ -132,6 +135,7 @@ impl Window {
                     }
                 }
             }
+            self.needs_redraw = true;
             Ok(())
         } else {
             Terminal::print_log(&format!("Pattern not found: {}", pattern))?;
@@ -298,11 +302,15 @@ impl Window {
             col_end,
         }
     }
-    fn render_line(&self, row: usize, text: &str) -> Result<(), std::io::Error> {
+    fn render_line(
+        &self,
+        row: usize,
+        annotated_text: &AnnotatedString,
+    ) -> Result<(), std::io::Error> {
         let pos = Position { row, col: 0 };
         Terminal::move_cursor_to(pos)?;
         Terminal::clear_line()?;
-        Terminal::print(text)?;
+        Terminal::print_annotated_str(annotated_text)?;
         Ok(())
     }
     fn update_scroll_offset(&mut self) -> Result<(), std::io::Error> {
