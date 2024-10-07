@@ -1,9 +1,11 @@
 use crossterm::cursor::MoveTo;
 use crossterm::execute;
-use crossterm::style::Print;
+use crossterm::style::{Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
 };
+
+use super::annotated_string::{AnnotatedString, DrawingOptions};
 
 pub struct Terminal {}
 
@@ -56,6 +58,27 @@ impl Terminal {
     }
     pub fn print(s: &str) -> Result<(), std::io::Error> {
         execute!(std::io::stdout(), Print(s))?;
+        Ok(())
+    }
+    pub fn print_annotated_str(s: &AnnotatedString) -> Result<(), std::io::Error> {
+        let segments = s.into_segments();
+        for seg in &segments {
+            if let Some(style) = &seg.style {
+                let DrawingOptions {
+                    foreground_color,
+                    background_color,
+                } = style.get_drawing_options();
+                execute!(
+                    std::io::stdout(),
+                    SetForegroundColor(foreground_color),
+                    SetBackgroundColor(background_color)
+                )?;
+            }
+            execute!(std::io::stdout(), Print(&seg.string))?;
+            if seg.style.is_some() {
+                execute!(std::io::stdout(), ResetColor)?;
+            }
+        }
         Ok(())
     }
     pub fn print_log(s: &str) -> Result<(), std::io::Error> {
