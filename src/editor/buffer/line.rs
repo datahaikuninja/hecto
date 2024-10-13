@@ -1,3 +1,5 @@
+use super::super::annotated_string::{AnnotatedString, Annotation};
+use super::super::RenderContext;
 use super::grapheme::{str_to_graphemes, Grapheme};
 
 #[derive(Default)]
@@ -21,32 +23,11 @@ impl Line {
             to_str_idx,
         }
     }
+    pub fn get_raw_str(&self) -> &str {
+        &self.raw_string
+    }
     pub fn get_nth_grapheme(&self, index: usize) -> Option<Grapheme> {
         self.graphemes.get(index).cloned()
-    }
-    pub fn get_visible_graphemes(&self, left: usize, right: usize) -> String {
-        let mut result = String::new();
-        let mut current_pos = 0;
-        for grapheme in &self.graphemes {
-            let next_pos = current_pos + grapheme.get_width_at_current_pos(current_pos);
-            if current_pos >= right {
-                break;
-            }
-            if next_pos > left {
-                // Replace cut-off text with '>' or '<'.
-                if next_pos > right {
-                    result.push('>');
-                } else if current_pos < left {
-                    result.push('<');
-                }
-                // add fully visible grapheme
-                else {
-                    result.push_str(&grapheme.to_string());
-                }
-            }
-            current_pos = next_pos;
-        }
-        result
     }
     pub fn calc_width_until_grapheme_index(&self, graphme_index: usize) -> usize {
         let mut current_pos = 0;
@@ -92,6 +73,12 @@ impl Line {
         self.rebuild_fragments();
         Self::from_str(&remainder)
     }
+    fn to_byte_idx(&self, grapheme_idx: usize) -> usize {
+        self.to_str_idx
+            .get(grapheme_idx)
+            .cloned()
+            .unwrap_or(self.raw_string.len())
+    }
     fn to_grapheme_idx(&self, str_idx: usize) -> usize {
         for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
             if *cur_str_idx >= str_idx {
@@ -99,6 +86,20 @@ impl Line {
             }
         }
         panic!("Error: str index is out of bound");
+    }
+    pub fn search_all_occurence(&self, pattern: &str) -> Vec<(usize, usize)> {
+        let mut result = vec![];
+        if pattern.is_empty() {
+            return result;
+        }
+        let mut start_index = 0;
+        while let Some(grapheme_idx) = self.search(pattern, start_index) {
+            let start = grapheme_idx;
+            let end = start + pattern.len();
+            result.push((start, end));
+            start_index = grapheme_idx + 1;
+        }
+        result
     }
     pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
         if self.is_empty() {
@@ -114,5 +115,69 @@ impl Line {
 impl std::fmt::Display for Line {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "{}", self.raw_string)
+    }
+}
+
+pub struct LineView<'a> {
+    line: &'a Line,
+    padding_left: String,
+    padding_right: String,
+    visible_range: (usize, usize),
+}
+
+impl<'a> LineView<'a> {
+    pub fn new(line: &'a Line, left: usize, right: usize) -> Self {
+        // make view from terminal column range [left, right) for line
+        let mut current_pos = 0;
+        let mut padding_left = String::new();
+        let mut padding_right = String::new();
+        let mut left_grapheme_idx = usize::MAX;
+        let mut right_grapheme_idx = usize::MAX;
+
+        for (i, grapheme) in line.graphemes.iter().enumerate() {
+            let next_pos = current_pos + grapheme.get_width_at_current_pos(current_pos);
+            // Current character is out of visible range
+            if next_pos <= left || current_pos >= right {
+                current_pos = next_pos;
+                continue;
+            }
+            let right_end_visible = left <= next_pos - 1 && next_pos - 1 < right;
+            let left_end_visible = left <= current_pos && current_pos < right;
+            assert!(right_end_visible || left_end_visible);
+            if !left_end_visible {
+                padding_left.push('<');
+            } else if !right_end_visible {
+                padding_right.push('>');
+            } else {
+                left_grapheme_idx = usize::min(left_grapheme_idx, i);
+                right_grapheme_idx = i + 1;
+            }
+            current_pos = next_pos;
+        }
+
+        Self {
+            line,
+            padding_left,
+            padding_right,
+            visible_range: (left_grapheme_idx, right_grapheme_idx),
+        }
+    }
+    pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
+        let search_hits = match context.search_pattern.as_deref() {
+            Some(s) => self.line.search_all_occurence(s),
+            None => vec![],
+        };
+        let mut content = AnnotatedString::from_str(self.line.get_raw_str());
+        for (match_start, match_end) in search_hits {
+            content.add_annotation(Annotation::new(match_start, match_end));
+        }
+        let start = self.line.to_byte_idx(self.visible_range.0);
+        let end = self.line.to_byte_idx(self.visible_range.1);
+        let visible_content = content.substr(start, end);
+        let mut result = AnnotatedString::default();
+        result.push_annot_str(&AnnotatedString::from_str(&self.padding_left));
+        result.push_annot_str(&visible_content);
+        result.push_annot_str(&AnnotatedString::from_str(&self.padding_right));
+        result
     }
 }

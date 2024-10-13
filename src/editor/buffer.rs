@@ -3,7 +3,7 @@ use std::io::Write;
 use super::window::TextLocation;
 
 mod line;
-pub use line::Line;
+pub use line::{Line, LineView};
 
 pub mod grapheme;
 

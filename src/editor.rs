@@ -22,6 +22,8 @@ use command_bar::CommandBar;
 mod cmdline_commands;
 use cmdline_commands::CmdlineCommands;
 
+mod annotated_string;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
@@ -30,9 +32,14 @@ pub struct DocumentStatus {
     file_name: Option<String>,
 }
 
+#[derive(Debug)]
 pub enum SearchDirection {
     Forward,
     Backward,
+}
+
+pub struct RenderContext {
+    pub search_pattern: Option<String>,
 }
 
 pub struct Editor {
@@ -41,7 +48,7 @@ pub struct Editor {
     window: Window,
     status_bar: StatusBar,
     command_bar: CommandBar,
-    last_search_pattern: String,
+    last_search_pattern: Option<String>,
 }
 
 impl Editor {
@@ -61,7 +68,7 @@ impl Editor {
             window: view,
             status_bar: StatusBar::new(height - status_bar_height - message_bar_height),
             command_bar: CommandBar::new(height - message_bar_height),
-            last_search_pattern: String::new(),
+            last_search_pattern: None,
         }
     }
     pub fn load_file(&mut self, filename: &str) {
@@ -123,12 +130,16 @@ impl Editor {
                 self.command_bar.set_cmdline_prompt(submode);
             }
             NormalModeCommand::SearchNext => {
-                self.window
-                    .search(&self.last_search_pattern, SearchDirection::Forward)?;
+                self.window.search(
+                    self.last_search_pattern.as_deref(),
+                    SearchDirection::Forward,
+                )?;
             }
             NormalModeCommand::SearchPrev => {
-                self.window
-                    .search(&self.last_search_pattern, SearchDirection::Backward)?;
+                self.window.search(
+                    self.last_search_pattern.as_deref(),
+                    SearchDirection::Backward,
+                )?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -213,12 +224,16 @@ impl Editor {
             CmdlineCommands::Saveas(filename) => {
                 self.window.save_buffer_with_filename(&filename)?;
             }
+            CmdlineCommands::StopHighlighting => {
+                self.last_search_pattern = None;
+                self.window.set_needs_redraw();
+            }
         }
         Ok(())
     }
     fn execute_search(&mut self, direction: SearchDirection) -> Result<(), std::io::Error> {
-        let pattern = self.command_bar.get_raw_cmdline();
-        self.window.search(&pattern, direction)?;
+        let pattern = Some(self.command_bar.get_raw_cmdline());
+        self.window.search(pattern.as_deref(), direction)?;
         self.last_search_pattern = pattern;
         self.command_bar.clear_cmdline();
         Ok(())
@@ -228,7 +243,10 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
-            self.window.render()?;
+            let context = RenderContext {
+                search_pattern: self.last_search_pattern.clone(),
+            };
+            self.window.render(&context)?;
             self.status_bar.render()?;
             self.command_bar.render()?;
             let pos = self.window.get_relative_position();
