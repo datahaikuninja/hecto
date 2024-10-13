@@ -2,6 +2,7 @@ pub enum CmdlineCommands {
     Quit,
     Write,
     Saveas(String),
+    StopHighlighting,
 }
 
 impl CmdlineCommands {
@@ -16,6 +17,8 @@ impl CmdlineCommands {
                     Err("No filename provided for `saveas` command.".to_string())
                 }
             }
+            // NO Highlight search
+            "noh" => Ok(Self::StopHighlighting),
             _ => Err(format!("No such command: {}", cmdline[0])),
         }
     }

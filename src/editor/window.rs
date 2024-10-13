@@ -66,6 +66,9 @@ impl Window {
             file_name: self.buffer.get_filename(),
         }
     }
+    pub fn set_needs_redraw(&mut self) {
+        self.needs_redraw = true;
+    }
     pub fn render(&mut self, context: &RenderContext) -> Result<(), std::io::Error> {
         // TODO: separate implementation of render()
         // according to whether buffer is empty or not.
@@ -101,12 +104,13 @@ impl Window {
     }
     pub fn search(
         &mut self,
-        pattern: &str,
+        pattern: Option<&str>,
         direction: SearchDirection,
     ) -> Result<(), std::io::Error> {
-        if pattern.is_empty() {
+        if pattern.is_none() {
             return Ok(());
         }
+        let pattern = pattern.unwrap();
         let result_list = self.buffer.search(pattern);
         if !result_list.is_empty() {
             match direction {

@@ -163,7 +163,10 @@ impl<'a> LineView<'a> {
         }
     }
     pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
-        let search_hits = self.line.search_all_occurence(&context.search_pattern);
+        let search_hits = match context.search_pattern.as_deref() {
+            Some(s) => self.line.search_all_occurence(s),
+            None => vec![],
+        };
         let mut content = AnnotatedString::from_str(self.line.get_raw_str());
         for (match_start, match_end) in search_hits {
             content.add_annotation(Annotation::new(match_start, match_end));
