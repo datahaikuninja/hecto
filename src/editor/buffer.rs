@@ -2,6 +2,8 @@ use std::io::Write;
 
 use super::window::TextLocation;
 
+use super::highlighter::Highlighter;
+
 mod line;
 pub use line::{Line, LineView};
 
@@ -102,5 +104,10 @@ impl Buffer {
             }
         }
         result_list
+    }
+    pub fn highlight(&self, highlighter: &mut Highlighter) {
+        for line in self.lines.iter() {
+            highlighter.highlight_line(line);
+        }
     }
 }

@@ -24,6 +24,8 @@ use cmdline_commands::CmdlineCommands;
 
 mod annotated_string;
 
+mod highlighter;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,

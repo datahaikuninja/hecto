@@ -1,5 +1,6 @@
-use super::super::annotated_string::{AnnotatedString, Annotation, Style};
-use super::super::RenderContext;
+use crate::editor::highlighter::LineHighlighter;
+
+use super::super::annotated_string::AnnotatedString;
 use super::grapheme::{str_to_graphemes, Grapheme};
 
 #[derive(Default)]
@@ -162,28 +163,12 @@ impl<'a> LineView<'a> {
             visible_range: (left_grapheme_idx, right_grapheme_idx),
         }
     }
-    pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
+    pub fn build_rendered_str(&self, highlighter: &LineHighlighter) -> AnnotatedString {
         let mut content = AnnotatedString::from_str(self.line.get_raw_str());
-        // digit annotations
-        content
-            .get_str()
-            .to_string() // copy
-            .chars()
-            .enumerate()
-            .for_each(|(idx, ch)| {
-                if ch.is_ascii_digit() {
-                    content.add_annotation(Annotation::new(Style::Digit, idx, idx + 1));
-                }
-            });
-        // search result annotations
-        let search_hits = match context.search_pattern.as_deref() {
-            Some(s) => self.line.search_all_occurence(s),
-            None => vec![],
-        };
-        for (match_start, match_end) in search_hits {
-            content.add_annotation(Annotation::new(Style::SearchHit, match_start, match_end));
+        let annotations = highlighter.get_annotations();
+        for annot in annotations {
+            content.add_annotation(annot);
         }
-
         let start = self.line.to_byte_idx(self.visible_range.0);
         let end = self.line.to_byte_idx(self.visible_range.1);
         let visible_content = content.substr(start, end);
