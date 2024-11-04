@@ -13,7 +13,7 @@ use super::DocumentStatus;
 
 use super::buffer::LineView;
 
-use super::highlighter::{Highlighter, LineHighlighter};
+use super::highlighter::{HighlighterBundler, LineHighlighter};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct TextLocation {
@@ -78,7 +78,7 @@ impl Window {
         if !self.needs_redraw {
             return Ok(());
         }
-        let mut highlighter = Highlighter::new(context);
+        let mut highlighter = HighlighterBundler::new(context);
         self.buffer.highlight(&mut highlighter);
         let top = self.scroll_offset.row;
         let Size { height, width } = self.size;

@@ -46,6 +46,7 @@ pub enum SearchDirection {
 
 pub struct RenderContext {
     pub search_pattern: Option<String>,
+    pub file_type: FileType,
 }
 
 pub struct Editor {
@@ -249,8 +250,10 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
+            let status = self.window.get_status();
             let context = RenderContext {
                 search_pattern: self.last_search_pattern.clone(),
+                file_type: status.file_type,
             };
             self.window.render(&context)?;
             self.status_bar.render()?;
