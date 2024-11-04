@@ -64,6 +64,7 @@ impl Window {
         DocumentStatus {
             total_lines: self.buffer.get_n_lines(),
             current_line_index: self.cursor_location.line_idx,
+            file_type: self.buffer.get_filetype(),
             is_modified: self.buffer.modified,
             file_name: self.buffer.get_filename(),
         }

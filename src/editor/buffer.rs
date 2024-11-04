@@ -9,6 +9,8 @@ pub use line::{Line, LineView};
 
 pub mod grapheme;
 
+use crate::editor::filetype::FileType;
+
 #[derive(Default)]
 pub struct Buffer {
     pub lines: Vec<Line>,
@@ -40,6 +42,11 @@ impl Buffer {
         self.filename = Some(filename.to_string());
         self.modified = false;
         Ok(())
+    }
+    pub fn get_filetype(&self) -> FileType {
+        self.filename
+            .as_deref()
+            .map_or(FileType::Text, |s| FileType::from_filename(s))
     }
     pub fn get_line_length(&self, line_index: usize) -> usize {
         self.lines.get(line_index).map_or(0, |line| line.len())

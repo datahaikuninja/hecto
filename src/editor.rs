@@ -26,10 +26,14 @@ mod annotated_string;
 
 mod highlighter;
 
+mod filetype;
+use filetype::FileType;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
     current_line_index: usize,
+    file_type: FileType,
     is_modified: bool,
     file_name: Option<String>,
 }
