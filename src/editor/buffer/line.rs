@@ -1,3 +1,5 @@
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::editor::highlighter::LineHighlighter;
 
 use super::super::annotated_string::AnnotatedString;
@@ -110,6 +112,10 @@ impl Line {
         self.raw_string[byte_index..]
             .find(pattern)
             .map(|str_idx| byte_index + self.to_grapheme_idx(str_idx))
+    }
+
+    pub fn split_word_bound_indices(&self) -> unicode_segmentation::UWordBoundIndices<'_> {
+        self.raw_string.split_word_bound_indices()
     }
 }
 

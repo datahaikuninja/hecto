@@ -5,6 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 pub enum Style {
     SearchHit,
     Digit,
+    Keywords,
 }
 
 pub struct DrawingOptions {
@@ -28,6 +29,14 @@ impl Style {
                     r: 234,
                     g: 156,
                     b: 88,
+                },
+                background_color: Color::Reset,
+            },
+            Self::Keywords => DrawingOptions {
+                foreground_color: Color::Rgb {
+                    r: 151,
+                    g: 118,
+                    b: 216,
                 },
                 background_color: Color::Reset,
             },
