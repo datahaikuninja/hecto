@@ -99,6 +99,9 @@ impl Line {
             let end = start + pattern.len();
             result.push((start, end));
             start_index = self.to_grapheme_idx(start) + 1;
+            if start_index >= self.len() {
+                break;
+            }
         }
         result
     }
