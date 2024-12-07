@@ -93,14 +93,15 @@ impl Line {
             return result;
         }
         let mut start_index = 0;
-        while let Some(grapheme_idx) = self.search(pattern, start_index) {
-            let start = grapheme_idx;
+        while let Some(start) = self.search(pattern, start_index) {
             let end = start + pattern.len();
             result.push((start, end));
-            start_index = grapheme_idx + 1;
+            start_index = self.to_grapheme_idx(start) + 1;
         }
         result
     }
+    // search pattern in a line after start_idx (in graphemes) and
+    // returns first index in bytes.
     pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
         if self.is_empty() {
             return None;
@@ -108,7 +109,7 @@ impl Line {
         let byte_index = self.to_str_idx[start_idx];
         self.raw_string[byte_index..]
             .find(pattern)
-            .map(|str_idx| byte_index + self.to_grapheme_idx(str_idx))
+            .map(|str_idx| byte_index + str_idx)
     }
 }
 
