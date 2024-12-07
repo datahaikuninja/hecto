@@ -79,7 +79,7 @@ impl Line {
             .cloned()
             .unwrap_or(self.raw_string.len())
     }
-    fn to_grapheme_idx(&self, str_idx: usize) -> usize {
+    pub fn to_grapheme_idx(&self, str_idx: usize) -> usize {
         for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
             if *cur_str_idx >= str_idx {
                 return grapheme_idx;
@@ -88,6 +88,8 @@ impl Line {
         panic!("Error: str index is out of bound");
     }
     pub fn search_all_occurence(&self, pattern: &str) -> Vec<(usize, usize)> {
+        // Returns: vector of (start, end)
+        // start, end indices are in byte indices
         let mut result = vec![];
         if pattern.is_empty() {
             return result;
@@ -102,7 +104,7 @@ impl Line {
     }
     // search pattern in a line after start_idx (in graphemes) and
     // returns first index in bytes.
-    pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
+    fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
         if self.is_empty() {
             return None;
         }
