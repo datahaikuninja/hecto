@@ -8,6 +8,7 @@ pub enum Style {
     Keywords,
     TypeName,
     VarinatName,
+    Comment,
 }
 
 pub struct DrawingOptions {
@@ -55,6 +56,14 @@ impl Style {
                     r: 234,
                     g: 156,
                     b: 88,
+                },
+                background_color: Color::Reset,
+            },
+            Self::Comment => DrawingOptions {
+                foreground_color: Color::Rgb {
+                    r: 116,
+                    g: 128,
+                    b: 145,
                 },
                 background_color: Color::Reset,
             },

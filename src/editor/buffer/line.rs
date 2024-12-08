@@ -42,6 +42,9 @@ impl Line {
     pub fn len(&self) -> usize {
         self.graphemes.len()
     }
+    pub fn byte_len(&self) -> usize {
+        self.raw_string.len()
+    }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

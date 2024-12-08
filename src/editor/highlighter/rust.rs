@@ -49,11 +49,19 @@ fn is_variant_name(word: &str) -> bool {
     VARIANT_NAMES.contains(&word)
 }
 
+fn is_single_line_comment_start(word: &str) -> bool {
+    word.starts_with("//")
+}
+
 impl Highlighter for RustSyntaxHighlighter {
     fn highlight_line(&mut self, line: &Line) {
         let mut annotations = vec![];
+        let mut in_comment = false;
         for (idx, word) in line.split_word_bound_indices() {
-            let annotation = if is_number(word) {
+            let annotation = if is_single_line_comment_start(&line.get_raw_str()[idx..]) {
+                in_comment = true;
+                Some(Annotation::new(Style::Comment, idx, idx + line.byte_len()))
+            } else if is_number(word) {
                 Some(Annotation::new(Style::Digit, idx, idx + word.len()))
             } else if is_keyword(word) {
                 Some(Annotation::new(Style::Keywords, idx, idx + word.len()))
@@ -64,7 +72,10 @@ impl Highlighter for RustSyntaxHighlighter {
             } else {
                 None
             };
-            annotation.map_or((), |annot| annotations.push(annot))
+            let _ = annotation.map_or((), |annot| annotations.push(annot));
+            if in_comment {
+                break;
+            }
         }
         self.highlights.push(annotations);
     }
