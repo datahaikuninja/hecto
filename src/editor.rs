@@ -24,10 +24,16 @@ use cmdline_commands::CmdlineCommands;
 
 mod annotated_string;
 
+mod highlighter;
+
+mod filetype;
+use filetype::FileType;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
     current_line_index: usize,
+    file_type: FileType,
     is_modified: bool,
     file_name: Option<String>,
 }
@@ -40,6 +46,7 @@ pub enum SearchDirection {
 
 pub struct RenderContext {
     pub search_pattern: Option<String>,
+    pub file_type: FileType,
 }
 
 pub struct Editor {
@@ -243,8 +250,10 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
+            let status = self.window.get_status();
             let context = RenderContext {
                 search_pattern: self.last_search_pattern.clone(),
+                file_type: status.file_type,
             };
             self.window.render(&context)?;
             self.status_bar.render()?;

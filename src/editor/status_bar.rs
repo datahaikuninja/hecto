@@ -41,7 +41,8 @@ impl StatusBar {
         };
         let left_status = format!("{} {}", buffer_name, modified_status_str);
         let right_status = format!(
-            "{}/{}",
+            "[{}] {}/{}",
+            self.current_status.file_type.to_string(),
             self.current_status.current_line_index + 1, // 0-idx to 1-idx
             usize::max(1, self.current_status.total_lines), // If the buffer is empty, it is treated as a single line.
         );
