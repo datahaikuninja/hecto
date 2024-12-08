@@ -6,6 +6,21 @@ const KEYWORDS: [&str; 12] = [
     "fn", "mod", "use", "pub", "if", "else", "for", "in", "struct", "impl", "let", "match",
 ];
 
+const TYPE_NAMES: [&str; 21] = [
+    "i8", "i16", "i32", "i64", "i128", "isize", // signed integeres
+    "u8", "u16", "u32", "u64", "u128", "usize", // unsigned integeres
+    "f32", "f64", // floating point numbers
+    "bool", "char", "str", // other builtin types
+    "Option", "Result", // enum types in std::prelude
+    "String", "Vec", // struct types in std::prelude
+];
+
+const VARIANT_NAMES: [&str; 6] = [
+    "true", "false", // bool
+    "Some", "None", // Option
+    "Ok", "Err", // Result
+];
+
 pub struct RustSyntaxHighlighter {
     highlights: Vec<Vec<Annotation>>,
 }
@@ -26,6 +41,14 @@ fn is_keyword(word: &str) -> bool {
     KEYWORDS.contains(&word)
 }
 
+fn is_type_name(word: &str) -> bool {
+    TYPE_NAMES.contains(&word)
+}
+
+fn is_variant_name(word: &str) -> bool {
+    VARIANT_NAMES.contains(&word)
+}
+
 impl Highlighter for RustSyntaxHighlighter {
     fn highlight_line(&mut self, line: &Line) {
         let mut annotations = vec![];
@@ -34,6 +57,10 @@ impl Highlighter for RustSyntaxHighlighter {
                 Some(Annotation::new(Style::Digit, idx, idx + word.len()))
             } else if is_keyword(word) {
                 Some(Annotation::new(Style::Keywords, idx, idx + word.len()))
+            } else if is_type_name(word) {
+                Some(Annotation::new(Style::TypeName, idx, idx + word.len()))
+            } else if is_variant_name(word) {
+                Some(Annotation::new(Style::VarinatName, idx, idx + word.len()))
             } else {
                 None
             };

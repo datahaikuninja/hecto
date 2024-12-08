@@ -6,6 +6,8 @@ pub enum Style {
     SearchHit,
     Digit,
     Keywords,
+    TypeName,
+    VarinatName,
 }
 
 pub struct DrawingOptions {
@@ -37,6 +39,22 @@ impl Style {
                     r: 151,
                     g: 118,
                     b: 216,
+                },
+                background_color: Color::Reset,
+            },
+            Self::TypeName => DrawingOptions {
+                foreground_color: Color::Rgb {
+                    r: 215,
+                    g: 189,
+                    b: 108,
+                },
+                background_color: Color::Reset,
+            },
+            Self::VarinatName => DrawingOptions {
+                foreground_color: Color::Rgb {
+                    r: 234,
+                    g: 156,
+                    b: 88,
                 },
                 background_color: Color::Reset,
             },
