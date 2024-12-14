@@ -144,18 +144,10 @@ impl Editor {
                 self.command_bar.set_cmdline_prompt(submode);
             }
             NormalModeCommand::SearchNext => {
-                self.render_context.enable_search_highlighting = true;
-                self.window.search(
-                    self.render_context.get_search_highlight_pattern(),
-                    SearchDirection::Forward,
-                )?;
+                self.execute_search(SearchDirection::Forward)?;
             }
             NormalModeCommand::SearchPrev => {
-                self.render_context.enable_search_highlighting = true;
-                self.window.search(
-                    self.render_context.get_search_highlight_pattern(),
-                    SearchDirection::Backward,
-                )?;
+                self.execute_search(SearchDirection::Backward)?;
             }
             NormalModeCommand::Nop => (),
         }
@@ -195,8 +187,10 @@ impl Editor {
                         self.parse_and_execute_cmdline_command()?;
                     }
                     EditorMode::CmdlineMode(CmdlineSubmode::Search) => {
-                        self.render_context.enable_search_highlighting = true;
+                        let pattern = self.command_bar.get_raw_cmdline();
+                        self.render_context.search_pattern = pattern;
                         self.execute_search(SearchDirection::Forward)?;
+                        self.command_bar.clear_cmdline();
                     }
                     _ => {
                         panic!("You should be in cmdline mode here.")
@@ -249,13 +243,11 @@ impl Editor {
         Ok(())
     }
     fn execute_search(&mut self, direction: SearchDirection) -> Result<(), std::io::Error> {
-        let pattern = self.command_bar.get_raw_cmdline();
-        self.render_context.search_pattern = pattern;
+        self.render_context.enable_search_highlighting = true;
         self.window.search(
             self.render_context.get_search_highlight_pattern(),
             direction,
         )?;
-        self.command_bar.clear_cmdline();
         Ok(())
     }
     fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
