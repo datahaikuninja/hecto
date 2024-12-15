@@ -1,5 +1,8 @@
-use super::super::annotated_string::{AnnotatedString, Annotation};
-use super::super::RenderContext;
+use unicode_segmentation::UnicodeSegmentation;
+
+use crate::editor::highlighter::LineHighlighter;
+
+use super::super::annotated_string::AnnotatedString;
 use super::grapheme::{str_to_graphemes, Grapheme};
 
 #[derive(Default)]
@@ -38,6 +41,9 @@ impl Line {
     }
     pub fn len(&self) -> usize {
         self.graphemes.len()
+    }
+    pub fn byte_len(&self) -> usize {
+        self.raw_string.len()
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -116,6 +122,10 @@ impl Line {
             .find(pattern)
             .map(|str_idx| byte_index + str_idx)
     }
+
+    pub fn split_word_bound_indices(&self) -> unicode_segmentation::UWordBoundIndices<'_> {
+        self.raw_string.split_word_bound_indices()
+    }
 }
 
 impl std::fmt::Display for Line {
@@ -168,14 +178,11 @@ impl<'a> LineView<'a> {
             visible_range: (left_grapheme_idx, right_grapheme_idx),
         }
     }
-    pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
-        let search_hits = match context.get_search_highlight_pattern() {
-            Some(s) => self.line.search_all_occurence(s),
-            None => vec![],
-        };
+    pub fn build_rendered_str(&self, highlighter: &LineHighlighter) -> AnnotatedString {
         let mut content = AnnotatedString::from_str(self.line.get_raw_str());
-        for (match_start, match_end) in search_hits {
-            content.add_annotation(Annotation::new(match_start, match_end));
+        let annotations = highlighter.get_annotations();
+        for annot in annotations {
+            content.add_annotation(annot);
         }
         let start = self.line.to_byte_idx(self.visible_range.0);
         let end = self.line.to_byte_idx(self.visible_range.1);

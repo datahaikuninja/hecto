@@ -24,10 +24,16 @@ use cmdline_commands::CmdlineCommands;
 
 mod annotated_string;
 
+mod highlighter;
+
+mod filetype;
+use filetype::FileType;
+
 #[derive(Default, Eq, PartialEq, Debug)]
 pub struct DocumentStatus {
     total_lines: usize,
     current_line_index: usize,
+    file_type: FileType,
     is_modified: bool,
     file_name: Option<String>,
 }
@@ -39,6 +45,7 @@ pub enum SearchDirection {
 }
 
 pub struct RenderContext {
+    pub file_type: FileType,
     pub enable_search_highlighting: bool,
     pub search_pattern: String,
 }
@@ -80,6 +87,7 @@ impl Editor {
             status_bar: StatusBar::new(height - status_bar_height - message_bar_height),
             command_bar: CommandBar::new(height - message_bar_height),
             render_context: RenderContext {
+                file_type: FileType::Text,
                 enable_search_highlighting: true,
                 search_pattern: String::from(""),
             },
@@ -88,6 +96,7 @@ impl Editor {
     pub fn load_file(&mut self, filename: &str) {
         self.window.load_file(&filename);
         let status = self.window.get_status();
+        self.render_context.file_type = status.file_type;
         self.status_bar.update_status(status);
     }
     pub fn run(&mut self) {
@@ -255,6 +264,8 @@ impl Editor {
             Terminal::clear_screen()?;
             print!("Goodbye!\r\n");
         } else {
+            let status = self.window.get_status();
+            self.render_context.file_type = status.file_type;
             self.window.render(&self.render_context)?;
             self.status_bar.render()?;
             self.command_bar.render()?;

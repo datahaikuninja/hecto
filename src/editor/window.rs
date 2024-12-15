@@ -13,6 +13,8 @@ use super::DocumentStatus;
 
 use super::buffer::LineView;
 
+use super::highlighter::{HighlighterBundler, LineHighlighter};
+
 #[derive(Copy, Clone, Default, Debug)]
 pub struct TextLocation {
     pub grapheme_idx: usize,
@@ -62,6 +64,7 @@ impl Window {
         DocumentStatus {
             total_lines: self.buffer.get_n_lines(),
             current_line_index: self.cursor_location.line_idx,
+            file_type: self.buffer.get_filetype(),
             is_modified: self.buffer.modified,
             file_name: self.buffer.get_filename(),
         }
@@ -75,6 +78,8 @@ impl Window {
         if !self.needs_redraw {
             return Ok(());
         }
+        let mut highlighter = HighlighterBundler::new(context);
+        self.buffer.highlight(&mut highlighter);
         let top = self.scroll_offset.row;
         let Size { height, width } = self.size;
         for i in 0..height {
@@ -82,7 +87,8 @@ impl Window {
                 let left = self.scroll_offset.col;
                 let right = left + width;
                 let view = LineView::new(&line, left, right);
-                let display_line = view.build_rendered_str(context);
+                let line_highlighter = LineHighlighter::new(&highlighter, i + top);
+                let display_line = view.build_rendered_str(&line_highlighter);
                 self.render_line(i, &display_line)?;
             } else {
                 self.render_line(i, &AnnotatedString::from_str("~"))?;
