@@ -85,7 +85,7 @@ impl Line {
             .cloned()
             .unwrap_or(self.raw_string.len())
     }
-    fn to_grapheme_idx(&self, str_idx: usize) -> usize {
+    pub fn to_grapheme_idx(&self, str_idx: usize) -> usize {
         for (grapheme_idx, cur_str_idx) in self.to_str_idx.iter().enumerate() {
             if *cur_str_idx >= str_idx {
                 return grapheme_idx;
@@ -94,27 +94,33 @@ impl Line {
         panic!("Error: str index is out of bound");
     }
     pub fn search_all_occurence(&self, pattern: &str) -> Vec<(usize, usize)> {
+        // Returns: vector of (start, end)
+        // start, end indices are in byte indices
         let mut result = vec![];
         if pattern.is_empty() {
             return result;
         }
         let mut start_index = 0;
-        while let Some(grapheme_idx) = self.search(pattern, start_index) {
-            let start = grapheme_idx;
+        while let Some(start) = self.search(pattern, start_index) {
             let end = start + pattern.len();
             result.push((start, end));
-            start_index = grapheme_idx + 1;
+            start_index = self.to_grapheme_idx(start) + 1;
+            if start_index >= self.len() {
+                break;
+            }
         }
         result
     }
-    pub fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
+    // search pattern in a line after start_idx (in graphemes) and
+    // returns first index in bytes.
+    fn search(&self, pattern: &str, start_idx: usize) -> Option<usize> {
         if self.is_empty() {
             return None;
         }
         let byte_index = self.to_str_idx[start_idx];
         self.raw_string[byte_index..]
             .find(pattern)
-            .map(|str_idx| byte_index + self.to_grapheme_idx(str_idx))
+            .map(|str_idx| byte_index + str_idx)
     }
 
     pub fn split_word_bound_indices(&self) -> unicode_segmentation::UWordBoundIndices<'_> {

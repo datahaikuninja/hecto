@@ -101,14 +101,16 @@ impl Buffer {
         // return first match in the entire buffer
         let mut result_list = vec![];
         for (line_idx, line) in self.lines.iter().enumerate() {
-            let mut start_index = 0;
-            while let Some(grapheme_idx) = line.search(pattern, start_index) {
-                result_list.push(TextLocation {
-                    grapheme_idx,
-                    line_idx,
-                });
-                start_index = grapheme_idx + 1;
-            }
+            let search_hits = line.search_all_occurence(pattern);
+            result_list.append(
+                &mut search_hits
+                    .iter()
+                    .map(|(str_idx, _)| TextLocation {
+                        line_idx,
+                        grapheme_idx: line.to_grapheme_idx(*str_idx),
+                    })
+                    .collect::<Vec<_>>(),
+            );
         }
         result_list
     }

@@ -113,6 +113,8 @@ impl Window {
         pattern: Option<&str>,
         direction: SearchDirection,
     ) -> Result<(), std::io::Error> {
+        // Always redraw to update search highlight
+        self.needs_redraw = true;
         if pattern.is_none() {
             return Ok(());
         }
@@ -145,7 +147,6 @@ impl Window {
                     }
                 }
             }
-            self.needs_redraw = true;
             Ok(())
         } else {
             Terminal::print_log(&format!("Pattern not found: {}", pattern))?;

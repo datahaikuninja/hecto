@@ -17,7 +17,7 @@ impl<'a> SearchHighlighter<'a> {
     }
     fn highlight_search(&self, line: &Line, annotations: &mut Vec<Annotation>) {
         // search result annotations
-        let search_hits = match self.render_context.search_pattern.as_deref() {
+        let search_hits = match self.render_context.get_search_highlight_pattern() {
             Some(s) => line.search_all_occurence(s),
             None => vec![],
         };

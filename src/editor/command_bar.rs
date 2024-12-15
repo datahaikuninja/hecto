@@ -20,6 +20,9 @@ impl CommandBar {
         }
     }
     pub fn render(&mut self) -> Result<(), std::io::Error> {
+        if !self.needs_redraw {
+            return Ok(());
+        }
         let message = format!("{}{}", self.prompt, self.cmdline);
         Terminal::move_cursor_to(Position {
             row: self.pos_y,
@@ -27,15 +30,18 @@ impl CommandBar {
         })?;
         Terminal::clear_line()?;
         Terminal::print(&message)?;
+        self.needs_redraw = false;
         Ok(())
     }
 
     pub fn insert_char(&mut self, c: char) {
+        self.needs_redraw = true;
         self.cmdline.insert_char(c, self.cmdline.len());
     }
 
     pub fn handle_backspace(&mut self) {
         if self.cmdline.len() > 0 {
+            self.needs_redraw = true;
             self.cmdline.delete_grapheme(self.cmdline.len() - 1);
         }
     }
@@ -44,9 +50,11 @@ impl CommandBar {
             CmdlineSubmode::Cmdline => ":",
             CmdlineSubmode::Search => "/",
         };
+        self.needs_redraw = true;
         self.prompt = String::from(prompt_str);
     }
     pub fn clear_cmdline(&mut self) {
+        self.needs_redraw = true;
         self.prompt = String::new();
         self.cmdline = Line::from_str("");
     }
@@ -61,6 +69,7 @@ impl CommandBar {
             .collect()
     }
     pub fn set_error_message(&mut self, msg: &str) {
+        self.needs_redraw = true;
         self.prompt = String::new();
         self.cmdline = Line::from_str(msg);
     }

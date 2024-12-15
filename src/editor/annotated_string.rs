@@ -130,18 +130,24 @@ impl AnnotatedString {
                 continue;
             }
             if start <= *start_idx && *end_idx <= end {
-                annots.push(annot.clone());
+                // Shift annotation position
+                let substrt_annot = Annotation {
+                    style: *style,
+                    start_idx: start_idx - start,
+                    end_idx: end_idx - start,
+                };
+                annots.push(substrt_annot);
             } else if *start_idx <= start && *end_idx <= end {
                 annots.push(Annotation {
                     style: *style,
-                    start_idx: start,
-                    end_idx: *end_idx,
+                    start_idx: 0,
+                    end_idx: *end_idx - start,
                 });
             } else if start <= *start_idx && end <= *end_idx {
                 annots.push(Annotation {
                     style: *style,
-                    start_idx: *start_idx,
-                    end_idx: end,
+                    start_idx: *start_idx - start,
+                    end_idx: end - start,
                 });
             }
         }
