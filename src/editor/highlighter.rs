@@ -5,8 +5,12 @@ use super::{annotated_string::Annotation, buffer::Line, RenderContext};
 use crate::editor::filetype::FileType;
 use search_highlight::SearchHighlighter;
 
+struct HighlightContext {
+    in_multiline_comment: bool,
+}
+
 trait Highlighter {
-    fn highlight_line(&mut self, line: &Line);
+    fn highlight_line(&mut self, line: &Line, ctx: &mut HighlightContext);
     fn get_annotations(&self, line_idx: usize) -> Vec<Annotation>;
 }
 
@@ -21,6 +25,7 @@ pub struct HighlighterBundler<'a> {
     // line index to annotations of line.
     syntax_highlighter: Option<Box<dyn Highlighter>>,
     search_highlighter: SearchHighlighter<'a>,
+    highlight_context: HighlightContext,
 }
 
 impl<'a> HighlighterBundler<'a> {
@@ -28,6 +33,9 @@ impl<'a> HighlighterBundler<'a> {
         Self {
             syntax_highlighter: create_syntax_highlighter(context.file_type),
             search_highlighter: SearchHighlighter::new(context),
+            highlight_context: HighlightContext {
+                in_multiline_comment: false,
+            },
         }
     }
 
@@ -36,9 +44,10 @@ impl<'a> HighlighterBundler<'a> {
             self.syntax_highlighter
                 .as_mut()
                 .unwrap()
-                .highlight_line(line);
+                .highlight_line(line, &mut self.highlight_context);
         }
-        self.search_highlighter.highlight_line(line);
+        self.search_highlighter
+            .highlight_line(line, &mut self.highlight_context);
     }
 
     pub fn get_annotations(&self, line_idx: usize) -> Vec<Annotation> {

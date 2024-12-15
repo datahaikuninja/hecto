@@ -1,4 +1,4 @@
-use super::Highlighter;
+use super::{HighlightContext, Highlighter};
 use crate::editor::annotated_string::{Annotation, Style};
 use crate::editor::buffer::Line;
 use crate::editor::RenderContext;
@@ -28,7 +28,7 @@ impl<'a> SearchHighlighter<'a> {
 }
 
 impl<'a> Highlighter for SearchHighlighter<'a> {
-    fn highlight_line(&mut self, line: &Line) {
+    fn highlight_line(&mut self, line: &Line, _ctx: &mut HighlightContext) {
         let mut annotations = vec![];
         self.highlight_search(line, &mut annotations);
         self.highlights.push(annotations);

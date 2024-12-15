@@ -1,4 +1,4 @@
-use super::Highlighter;
+use super::{HighlightContext, Highlighter};
 use crate::editor::annotated_string::{Annotation, Style};
 use crate::editor::buffer::Line;
 
@@ -53,13 +53,31 @@ fn is_single_line_comment_start(word: &str) -> bool {
     word.starts_with("//")
 }
 
+fn is_multi_line_comment_start(word: &str) -> bool {
+    word.starts_with("/*")
+}
+
+fn is_multi_line_comment_end(word: &str) -> bool {
+    word.starts_with("*/")
+}
+
 impl Highlighter for RustSyntaxHighlighter {
-    fn highlight_line(&mut self, line: &Line) {
+    fn highlight_line(&mut self, line: &Line, ctx: &mut HighlightContext) {
         let mut annotations = vec![];
-        let mut in_comment = false;
+        let mut in_sigle_line_comment = false;
         for (idx, word) in line.split_word_bound_indices() {
-            let annotation = if is_single_line_comment_start(&line.get_raw_str()[idx..]) {
-                in_comment = true;
+            let remainder = &line.get_raw_str()[idx..];
+            let annotation = if !ctx.in_multiline_comment && is_multi_line_comment_start(remainder)
+            {
+                ctx.in_multiline_comment = true;
+                Some(Annotation::new(Style::Comment, idx, idx + 2))
+            } else if ctx.in_multiline_comment && is_multi_line_comment_end(remainder) {
+                ctx.in_multiline_comment = false;
+                Some(Annotation::new(Style::Comment, idx, idx + 2))
+            } else if ctx.in_multiline_comment {
+                Some(Annotation::new(Style::Comment, idx, idx + word.len()))
+            } else if is_single_line_comment_start(remainder) {
+                in_sigle_line_comment = true;
                 Some(Annotation::new(Style::Comment, idx, idx + line.byte_len()))
             } else if is_number(word) {
                 Some(Annotation::new(Style::Digit, idx, idx + word.len()))
@@ -73,7 +91,7 @@ impl Highlighter for RustSyntaxHighlighter {
                 None
             };
             let _ = annotation.map_or((), |annot| annotations.push(annot));
-            if in_comment {
+            if in_sigle_line_comment {
                 break;
             }
         }
