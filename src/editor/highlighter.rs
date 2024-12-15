@@ -7,6 +7,7 @@ use search_highlight::SearchHighlighter;
 
 struct HighlightContext {
     in_multiline_comment: bool,
+    in_string_literal: bool,
 }
 
 trait Highlighter {
@@ -35,6 +36,7 @@ impl<'a> HighlighterBundler<'a> {
             search_highlighter: SearchHighlighter::new(context),
             highlight_context: HighlightContext {
                 in_multiline_comment: false,
+                in_string_literal: false,
             },
         }
     }

@@ -67,15 +67,26 @@ impl Highlighter for RustSyntaxHighlighter {
         let mut in_sigle_line_comment = false;
         for (idx, word) in line.split_word_bound_indices() {
             let remainder = &line.get_raw_str()[idx..];
-            let annotation = if !ctx.in_multiline_comment && is_multi_line_comment_start(remainder)
-            {
+            let annotation = if ctx.in_string_literal {
+                if remainder.chars().next().unwrap() == '"' {
+                    ctx.in_string_literal = false;
+                    Some(Annotation::new(Style::String, idx, idx + 1))
+                } else {
+                    Some(Annotation::new(Style::String, idx, idx + word.len()))
+                }
+            } else if ctx.in_multiline_comment {
+                if is_multi_line_comment_end(remainder) {
+                    ctx.in_multiline_comment = false;
+                    Some(Annotation::new(Style::Comment, idx, idx + 2))
+                } else {
+                    Some(Annotation::new(Style::Comment, idx, idx + word.len()))
+                }
+            } else if is_multi_line_comment_start(remainder) {
                 ctx.in_multiline_comment = true;
                 Some(Annotation::new(Style::Comment, idx, idx + 2))
-            } else if ctx.in_multiline_comment && is_multi_line_comment_end(remainder) {
-                ctx.in_multiline_comment = false;
-                Some(Annotation::new(Style::Comment, idx, idx + 2))
-            } else if ctx.in_multiline_comment {
-                Some(Annotation::new(Style::Comment, idx, idx + word.len()))
+            } else if remainder.chars().next().unwrap() == '"' {
+                ctx.in_string_literal = true;
+                Some(Annotation::new(Style::String, idx, idx + 2))
             } else if is_single_line_comment_start(remainder) {
                 in_sigle_line_comment = true;
                 Some(Annotation::new(Style::Comment, idx, idx + line.byte_len()))

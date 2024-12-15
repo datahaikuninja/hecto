@@ -5,6 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 pub enum Style {
     SearchHit,
     Digit,
+    String,
     Keywords,
     TypeName,
     VarinatName,
@@ -32,6 +33,14 @@ impl Style {
                     r: 234,
                     g: 156,
                     b: 88,
+                },
+                background_color: Color::Reset,
+            },
+            Self::String => DrawingOptions {
+                foreground_color: Color::Rgb {
+                    r: 136,
+                    g: 178,
+                    b: 152,
                 },
                 background_color: Color::Reset,
             },
