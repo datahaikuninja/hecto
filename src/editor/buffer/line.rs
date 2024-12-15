@@ -169,7 +169,7 @@ impl<'a> LineView<'a> {
         }
     }
     pub fn build_rendered_str(&self, context: &RenderContext) -> AnnotatedString {
-        let search_hits = match context.search_pattern.as_deref() {
+        let search_hits = match context.get_search_highlight_pattern() {
             Some(s) => self.line.search_all_occurence(s),
             None => vec![],
         };
